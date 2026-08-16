@@ -1,26 +1,21 @@
 #!/usr/bin/env python3
 """
-P2Chat-Core · BLE Scanner / Receiver (Bleak) + AI Toxicity Filter
-─────────────────────────────────────────────────────────────────────
+P2Chat-Core · BLE Scanner / Receiver (Bleak)
+─────────────────────────────────────────────
 Scans for the P2Chat BLE Service UUID, connects, reads the encrypted
-characteristic, decrypts via AES-256-GCM, then runs the plaintext
-through a TensorFlow Lite toxicity classifier.
+characteristic payload, and decrypts it via AES-256-GCM.
 
 Stack
 ─────
-  • Bleak           – cross-platform BLE client
-  • PyCryptodome    – AES-256-GCM decryption
-  • tflite-runtime  – on-device toxicity scoring  (graceful fallback
-                      to a keyword heuristic if no .tflite model is
-                      present — mirrors the Android MobileBertClassifier)
-  • NumPy           – tensor I/O
+  • Bleak         – cross-platform BLE client
+  • PyCryptodome  – AES-256-GCM decryption
 
 Usage
 ─────
   # Terminal 2 (after starting sender.py in Terminal 1):
   python receiver.py
 
-  # With a real BLE adapter (no extra flags needed — Bleak auto-detects):
+  # With a real BLE adapter:
   python receiver.py --scan-seconds 10
 """
 
@@ -29,12 +24,9 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import os
 import struct
 import sys
-from pathlib import Path
 
-import numpy as np
 from Crypto.Cipher import AES
 
 try:
@@ -93,135 +85,11 @@ def decrypt_payload(blob: bytes, key: bytes) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-#  AI Toxicity Filter  (TFLite or keyword fallback)
+#  BLE scan → connect → read → decrypt
 # ═══════════════════════════════════════════════════════════════════════════
 
-class ToxicityFilter:
-    """
-    Mirrors the behaviour of the Android ``MobileBertClassifier``:
-      • If a compatible .tflite model is found → run real inference.
-      • Otherwise → fall back to a deterministic keyword heuristic
-        (same word-list used in the Android scaffold).
-    """
-
-    MODEL_FILENAME  = "mobilebert_quantized.tflite"
-    MAX_SEQ_LEN     = 128
-    CLS_TOKEN_ID    = 101
-    SEP_TOKEN_ID    = 102
-    TOXICITY_THRESH = 0.50
-
-    FLAGGED_KEYWORDS = frozenset({
-        "spam", "phishing", "malware", "hate",
-        "attack", "badword", "scam", "abuse",
-    })
-
-    def __init__(self, model_dir: str | None = None) -> None:
-        self.interpreter = None
-        self._try_load_model(model_dir or str(Path(__file__).parent))
-
-    # ── Model loading ───────────────────────────────────────────────────
-    def _try_load_model(self, search_dir: str) -> None:
-        model_path = os.path.join(search_dir, self.MODEL_FILENAME)
-        if not os.path.isfile(model_path):
-            log.warning(
-                "TFLite model '%s' not found in %s — using keyword fallback.",
-                self.MODEL_FILENAME, search_dir,
-            )
-            return
-
-        try:
-            import tflite_runtime.interpreter as tflite
-            self.interpreter = tflite.Interpreter(model_path=model_path)
-            self.interpreter.allocate_tensors()
-            log.info("TFLite model loaded successfully from %s", model_path)
-        except Exception as exc:
-            log.warning("Failed to initialise TFLite interpreter: %s", exc)
-            self.interpreter = None
-
-    # ── Stub WordPiece tokenizer (same logic as MobileBertClassifier.kt) ─
-    def _tokenize(self, text: str) -> np.ndarray:
-        tokens = np.zeros(self.MAX_SEQ_LEN, dtype=np.int32)
-        tokens[0] = self.CLS_TOKEN_ID
-        words = text.lower().split()
-        idx = 1
-        for w in words:
-            if idx >= self.MAX_SEQ_LEN - 1:
-                break
-            h = abs(hash(w)) % 28_000 + 1_000
-            tokens[idx] = h
-            idx += 1
-        if idx < self.MAX_SEQ_LEN:
-            tokens[idx] = self.SEP_TOKEN_ID
-        return tokens
-
-    # ── Inference ───────────────────────────────────────────────────────
-    def score(self, text: str) -> dict:
-        """
-        Return a dict compatible with Android's ``FilterResult``:
-            { is_safe, toxicity_score, label, confidence }
-        """
-        if not text.strip():
-            return {
-                "is_safe": True,
-                "toxicity_score": 0.0,
-                "label": "Clean",
-                "confidence": 1.0,
-            }
-
-        # ── Real TFLite path ────────────────────────────────────────────
-        if self.interpreter is not None:
-            try:
-                token_ids = self._tokenize(text)
-                input_ids   = token_ids[np.newaxis, :]
-                input_mask  = (token_ids != 0).astype(np.int32)[np.newaxis, :]
-                segment_ids = np.zeros_like(input_ids, dtype=np.int32)
-
-                inp = self.interpreter.get_input_details()
-                out = self.interpreter.get_output_details()
-
-                self.interpreter.set_tensor(inp[0]["index"], input_ids)
-                if len(inp) > 1:
-                    self.interpreter.set_tensor(inp[1]["index"], input_mask)
-                if len(inp) > 2:
-                    self.interpreter.set_tensor(inp[2]["index"], segment_ids)
-
-                self.interpreter.invoke()
-
-                scores = self.interpreter.get_tensor(out[0]["index"])[0]
-                clean_score = float(scores[0])
-                toxic_score = float(scores[1])
-                is_safe = toxic_score < self.TOXICITY_THRESH
-
-                return {
-                    "is_safe": is_safe,
-                    "toxicity_score": round(toxic_score, 4),
-                    "label": "Clean" if is_safe else "Flagged",
-                    "confidence": round(max(clean_score, toxic_score), 4),
-                }
-            except Exception as exc:
-                log.warning("TFLite inference failed, falling back: %s", exc)
-
-        # ── Keyword fallback (identical to Android scaffold) ────────────
-        words = set(text.lower().split())
-        flagged = bool(words & self.FLAGGED_KEYWORDS)
-        sim_score = 0.88 if flagged else 0.04
-
-        return {
-            "is_safe": not flagged,
-            "toxicity_score": sim_score,
-            "label": "Flagged (Scaffold)" if flagged else "Clean (Scaffold)",
-            "confidence": 0.95,
-        }
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-#  BLE scan → connect → read → decrypt → filter
-# ═══════════════════════════════════════════════════════════════════════════
-
-async def run_receiver(scan_seconds: float, model_dir: str | None) -> None:
+async def run_receiver(scan_seconds: float) -> None:
     """Full receive pipeline."""
-
-    toxicity = ToxicityFilter(model_dir)
 
     # ── Scan for the P2Chat Service UUID ────────────────────────────────
     log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
@@ -269,17 +137,8 @@ async def run_receiver(scan_seconds: float, model_dir: str | None) -> None:
         log.error("Decryption FAILED: %s", exc)
         return
 
-    log.info("Decrypted message: %s", plaintext)
-
-    # ── AI Toxicity Filter ──────────────────────────────────────────────
-    result = toxicity.score(plaintext)
-
     log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     log.info("  📨  Decrypted Message : %s", plaintext)
-    log.info("  🛡️  AI Filter Label   : %s", result["label"])
-    log.info("  📊  Toxicity Score    : %.4f", result["toxicity_score"])
-    log.info("  ✅  Safe              : %s", result["is_safe"])
-    log.info("  🎯  Confidence        : %.4f", result["confidence"])
     log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 
@@ -289,7 +148,7 @@ async def run_receiver(scan_seconds: float, model_dir: str | None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="P2Chat BLE Receiver — scans, decrypts, and AI-filters incoming messages",
+        description="P2Chat BLE Receiver — scans, connects, and decrypts incoming messages",
     )
     parser.add_argument(
         "--scan-seconds", "-s",
@@ -297,13 +156,8 @@ def main() -> None:
         default=15.0,
         help="How long to scan for P2Chat advertisers (default: 15 s)",
     )
-    parser.add_argument(
-        "--model-dir", "-d",
-        default=None,
-        help="Directory containing mobilebert_quantized.tflite (default: script dir)",
-    )
     args = parser.parse_args()
-    asyncio.run(run_receiver(args.scan_seconds, args.model_dir))
+    asyncio.run(run_receiver(args.scan_seconds))
 
 
 if __name__ == "__main__":

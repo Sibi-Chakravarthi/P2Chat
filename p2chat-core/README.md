@@ -1,6 +1,6 @@
 # P2Chat-Core · BLE Proof-of-Concept
 
-> Laptop-to-laptop demo of the full P2Chat pipeline: **BLE broadcast → AES-256-GCM encryption → BLE scan & read → decryption → on-device AI toxicity filter**.
+> Laptop-to-laptop demo of the P2Chat messaging pipeline: **BLE broadcast → AES-256-GCM encryption → BLE scan & read → decryption**.
 
 ---
 
@@ -16,10 +16,9 @@
 │  AES-256-GCM encrypt            │                      │  AES-256-GCM decrypt                 │
 │      │                          │                      │      │                               │
 │      ▼                          │                      │      ▼                               │
-│  GATT Characteristic (read)     │                      │  TFLite Toxicity Filter              │
-│  Service: 6E400001-...          │                      │      │                               │
-│  Char:    6E400002-...          │                      │      ▼                               │
-│                                 │                      │  { is_safe, toxicity_score, label }   │
+│  GATT Characteristic (read)     │                      │  Plaintext output                    │
+│  Service: 6E400001-...          │                      │                                      │
+│  Char:    6E400002-...          │                      │                                      │
 └─────────────────────────────────┘                      └──────────────────────────────────────┘
 ```
 
@@ -69,8 +68,6 @@ python sender.py --transport usb:0
 python receiver.py
 # Adjust scan timeout:
 python receiver.py --scan-seconds 20
-# Point to a TFLite model directory:
-python receiver.py --model-dir ./models
 ```
 
 ### 4. Expected output (receiver)
@@ -79,24 +76,10 @@ python receiver.py --model-dir ./models
 12:00:05  [RECEIVER]  INFO  🎯 Found P2Chat node: P2Chat-Node  [AA:BB:CC:DD:EE:FF]
 12:00:06  [RECEIVER]  INFO  Connected ✔  (MTU negotiated)
 12:00:06  [RECEIVER]  INFO  Read encrypted payload: 96 bytes
-12:00:06  [RECEIVER]  INFO  Decrypted message: Hey from P2Chat! ...
 12:00:06  [RECEIVER]  INFO  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 12:00:06  [RECEIVER]  INFO    📨  Decrypted Message : Hey from P2Chat! ...
-12:00:06  [RECEIVER]  INFO    🛡️  AI Filter Label   : Clean (Scaffold)
-12:00:06  [RECEIVER]  INFO    📊  Toxicity Score    : 0.0400
-12:00:06  [RECEIVER]  INFO    ✅  Safe              : True
-12:00:06  [RECEIVER]  INFO    🎯  Confidence        : 0.9500
 12:00:06  [RECEIVER]  INFO  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
-
----
-
-## AI Filter Modes
-
-| Mode             | When                                      | Behaviour                                        |
-|------------------|-------------------------------------------|--------------------------------------------------|
-| **TFLite**       | `mobilebert_quantized.tflite` is present  | Real MobileBERT inference (same as Android app)  |
-| **Scaffold**     | No model file found                       | Keyword heuristic fallback (matches Android)     |
 
 ---
 
@@ -104,5 +87,4 @@ python receiver.py --model-dir ./models
 
 - Both scripts use the **exact same Service & Characteristic UUIDs** as the Android app's `BleConstants.kt`.
 - The encryption key is hardcoded (symmetric) for the PoC; in production, P2Chat would derive session keys via ECDH.
-- The toxicity filter mirrors `MobileBertClassifier.kt` logic 1:1 — same tokenizer stub, same keyword list, same threshold.
 - Bumble supports virtual transports (`tcp-server` / `tcp-client`) for demos without physical BLE hardware.
