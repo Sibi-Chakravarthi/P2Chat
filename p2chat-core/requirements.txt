@@ -1,0 +1,18 @@
+# ──────────────────────────────────────────────────
+# P2Chat-Core  ·  BLE Proof-of-Concept Dependencies
+# ──────────────────────────────────────────────────
+
+# BLE GATT Server (Sender) — Google's Bumble BLE stack
+bumble>=0.0.193
+
+# BLE Scanner / Client (Receiver) — cross-platform BLE library
+bleak>=0.22.3
+
+# AES-256-GCM encryption / decryption
+pycryptodome>=3.21.0
+
+# On-device AI toxicity classifier
+tflite-runtime>=2.14.0
+
+# Numerical support for TFLite tensor I/O
+numpy>=1.26.0
