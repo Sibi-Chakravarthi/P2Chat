@@ -1,0 +1,21 @@
+[project]
+name = "p2chat"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Sibi Chakravarthi", email = "sibichakravarthima31@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "bleak>=3.0.2",
+    "bumble>=0.0.235",
+    "pycryptodome>=3.24.0",
+]
+
+[project.scripts]
+p2chat = "p2chat:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

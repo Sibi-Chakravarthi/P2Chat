@@ -1,0 +1,11 @@
+# Virtual environment (never commit this)
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# IDE / Editor junk
+.idea/workspace.xml
+.idea/shelf/
+*.iml
