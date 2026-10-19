@@ -48,7 +48,7 @@ class MessageAtRestCipherTest {
         val message = MessageEntity(
             msgId = 99991L,
             groupId = 42L,
-            senderFp = 0xAABBCCDDEEFF0011L,
+            senderFp = 0xAABBCCDDEEFF0011UL.toLong(),
             keyEpoch = 1,
             sentAtMs = 1700000000000L,
             receivedAtMs = 1700000001000L,

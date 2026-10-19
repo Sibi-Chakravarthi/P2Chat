@@ -71,7 +71,7 @@ class IdentityAndGroupDatabaseTest {
     @Test
     fun testPeerPinning_keyConflictReturnsConflictResult() = runBlocking {
         val originalPeer = Peer(
-            senderFp = 0xABCDEF0123456789L,
+            senderFp = 0xABCDEF0123456789UL.toLong(),
             signingPub = ByteArray(65) { 0x0A },
             ecdhPub = ByteArray(65) { 0x0B },
             alias = "Bob",
@@ -91,7 +91,7 @@ class IdentityAndGroupDatabaseTest {
 
         // 3. Attacker presents DIFFERENT signing key for same fingerprint -> KeyConflict!
         val spoofedPeer = Peer(
-            senderFp = 0xABCDEF0123456789L,
+            senderFp = 0xABCDEF0123456789UL.toLong(),
             signingPub = ByteArray(65) { 0xFF.toByte() }, // Tampered key!
             ecdhPub = ByteArray(65) { 0x0B },
             alias = "Bob (Impostor)",
