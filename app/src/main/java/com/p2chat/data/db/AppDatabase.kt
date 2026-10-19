@@ -7,6 +7,10 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.p2chat.data.ai.BlockedVectorDao
+import com.p2chat.data.ai.BlockedVectorEntity
+import com.p2chat.data.ai.QuarantineDao
+import com.p2chat.data.ai.QuarantineEntity
 import com.p2chat.data.group.GroupDao
 import com.p2chat.data.group.GroupEntity
 import com.p2chat.data.group.RosterMember
@@ -28,7 +32,7 @@ import com.p2chat.data.settings.SettingDao
 /**
  * P2Chat primary Room database (Decision 10, PRD §4).
  * Single local encrypted database storing mesh deduplication, packet buffer,
- * identities, groups, roster, and messages.
+ * identities, groups, roster, messages, quarantine, and user blocked vectors.
  */
 @Database(
     entities = [
@@ -39,9 +43,11 @@ import com.p2chat.data.settings.SettingDao
         GroupEntity::class,
         RosterMember::class,
         Setting::class,
-        MessageEntity::class
+        MessageEntity::class,
+        QuarantineEntity::class,
+        BlockedVectorEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(LocalAtRestCipher::class)
@@ -55,6 +61,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun rosterMemberDao(): RosterMemberDao
     abstract fun settingDao(): SettingDao
     abstract fun messageDao(): MessageDao
+    abstract fun quarantineDao(): QuarantineDao
+    abstract fun blockedVectorDao(): BlockedVectorDao
 
     companion object {
         const val DATABASE_NAME = "p2chat.db"
@@ -151,6 +159,37 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `quarantine` (
+                        `msg_id` INTEGER NOT NULL,
+                        `group_id` INTEGER NOT NULL,
+                        `sender_fp` INTEGER NOT NULL,
+                        `body` BLOB NOT NULL,
+                        `score` REAL NOT NULL,
+                        `nearest_category` TEXT NOT NULL,
+                        `created_at_ms` INTEGER NOT NULL,
+                        `expires_at_ms` INTEGER NOT NULL,
+                        PRIMARY KEY(`msg_id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `user_blocked_vectors` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `vector` BLOB NOT NULL,
+                        `force_quarantine` INTEGER NOT NULL,
+                        `source_msg_id` INTEGER NOT NULL,
+                        `created_at_ms` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -161,7 +200,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { INSTANCE = it }
             }
