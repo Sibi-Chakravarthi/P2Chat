@@ -1,0 +1,27 @@
+# Curated explicit threat prototypes for offline centroid generation (T3.4, AI-15)
+# Category: prototype:threat
+I will kill you and your family.
+I am going to track you down and shoot you.
+I will find where you live and burn your house down.
+Watch your back because I am coming to beat you up.
+I will break your bones the next time I see you.
+You are dead meat when school ends today.
+I have a gun and I will use it on you.
+I will stab you in the chest if you show up.
+I will hunt you down and destroy your life.
+I am going to bomb your office building tomorrow.
+I will slash your throat in your sleep.
+You will not survive the night I swear to god.
+I will kidnap you and hurt you badly.
+I will put a bullet through your head.
+I am going to strangle you with my bare hands.
+I will poison your water supply.
+I am sending armed people to your location right now.
+I will break into your apartment and attack you.
+I will torture you until you beg for mercy.
+I am going to murder you in cold blood.
+You are going to die a painful and violent death.
+I will run you over with my car when you leave.
+I am going to slit your wrists and watch you bleed.
+I will blow up your car in the parking lot.
+Your days are numbered and you will pay with your blood.
