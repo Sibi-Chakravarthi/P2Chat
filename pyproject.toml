@@ -10,7 +10,13 @@ requires-python = ">=3.12"
 dependencies = [
     "bleak>=3.0.2",
     "bumble>=0.0.235",
+    "huggingface-hub>=2.2.0",
+    "numpy>=2.5.4",
+    "onnxruntime>=1.31.0",
     "pycryptodome>=3.24.0",
+    "scikit-learn>=1.9.1",
+    "tensorflow-cpu>=2.21.0",
+    "transformers>=5.20.1",
 ]
 
 [project.scripts]
