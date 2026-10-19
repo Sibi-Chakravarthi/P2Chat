@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100%;margin:0;padding:0;background-color:#131315;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary-container": "#815f00", "surface-container": "#201f22", "on-tertiary": "#402d00", "surface-dim": "#131315", "surface-container-lowest": "#0e0e10", "inverse-surface": "#e5e1e4", "tertiary-container": "#ffdf9f", "on-primary-fixed": "#1a1c1c", "outline-variant": "#444748", "surface-container-high": "#2a2a2c", "error": "#ffb4ab", "primary-fixed-dim": "#c6c6c7", "on-surface": "#e5e1e4", "secondary-container": "#00bd85", "primary-fixed": "#e2e2e2", "on-tertiary-fixed-variant": "#5c4300", "tertiary-fixed-dim": "#f9bd22", "on-tertiary-fixed": "#261a00", "on-primary": "#2f3131", "inverse-primary": "#5d5f5f", "surface-tint": "#c6c6c7", "on-primary-fixed-variant": "#454747", "secondary": "#45dfa4", "primary": "#ffffff", "surface-variant": "#353437", "surface-container-low": "#1c1b1d", "error-container": "#93000a", "surface-container-highest": "#353437", "tertiary": "#ffffff", "on-secondary-container": "#00452e", "on-surface-variant": "#c4c7c8", "on-background": "#e5e1e4", "on-error": "#690005", "outline": "#8e9192", "on-primary-container": "#636565", "secondary-fixed": "#68fcbf", "on-secondary-fixed-variant": "#005137", "surface": "#131315", "on-secondary": "#003825", "tertiary-fixed": "#ffdf9f", "background": "#131315", "on-error-container": "#ffdad6", "secondary-fixed-dim": "#45dfa4", "primary-container": "#e2e2e2", "inverse-on-surface": "#313032", "surface-bright": "#39393b", "on-secondary-fixed": "#002114" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin": "1rem", "gutter": "1rem", "space-lg": "1rem", "gutter-lg": "1.5rem", "space-xl": "1.5rem", "gutter-sm": "0.75rem", "margin-sm": "0.75rem", "margin-lg": "2rem", "space-xs": "0.25rem", "space-md": "0.75rem", "space-sm": "0.5rem", "space-2xl": "2.5rem" }, "fontFamily": { "headline-md": ["Inter"], "body-md": ["Inter"], "headline-lg-mobile": ["Inter"], "label-mono-lg": ["JetBrains Mono"], "body-lg": ["Inter"], "headline-sm": ["Inter"], "label-mono-md": ["JetBrains Mono"], "body-sm": ["Inter"], "label-mono-sm": ["JetBrains Mono"], "headline-lg": ["Inter"] }, "fontSize": { "headline-md": ["20px", {"lineHeight": "26px", "letterSpacing": "-0.01em", "fontWeight": "500"}], "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0.005em", "fontWeight": "400"}], "headline-lg-mobile": ["24px", {"lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "500"}], "label-mono-lg": ["13px", {"lineHeight": "18px", "letterSpacing": "-0.01em", "fontWeight": "500"}], "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0em", "fontWeight": "400"}], "headline-sm": ["16px", {"lineHeight": "22px", "letterSpacing": "-0.005em", "fontWeight": "500"}], "label-mono-md": ["11px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "400"}], "body-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "400"}], "label-mono-sm": ["10px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "400"}], "headline-lg": ["30px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "500"}] } } } };</script></head><body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 w-full z-50 pt-safe bg-surface/80 backdrop-blur-xl"><div class="h-14 px-margin flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="w-2 h-2 rounded-full bg-secondary"></div><h1 class="font-headline-sm text-headline-sm text-on-surface font-medium tracking-tight">Nearby Peers</h1></div><div class="flex items-center gap-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 w-full bg-surface pt-14 pb-20"><div class="flex flex-col w-full">
+<!-- Status & Control Header -->
+<div class="px-margin pt-space-md pb-space-lg flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Nearby Peers</h2>
+<!-- Minimalist Native Switch -->
+<label aria-label="Toggle Mesh Service" class="relative inline-flex items-center cursor-pointer select-none">
+<input checked="" class="sr-only peer" id="mesh-toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-surface-container-lowest after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary-container"></div>
+</label>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="font-label-mono-sm text-label-mono-sm text-outline">Buffer: 342/1000 packets · Service running</span>
+</div>
+</div>
+<!-- Quiet Banner Notification -->
+<div class="px-margin mb-space-lg" id="bt-alert">
+<div class="bg-surface-container-lowest p-space-md rounded-lg flex items-center justify-between text-on-surface-variant transition-colors hover:bg-surface-container-low cursor-pointer">
+<div class="flex items-center gap-space-sm min-w-0">
+<span class="material-symbols-outlined text-[18px] text-tertiary-fixed-dim">bluetooth_disabled</span>
+<span class="font-body-sm text-body-sm truncate text-on-surface">Bluetooth LE peripheral mode reduced</span>
+</div>
+<button class="font-label-mono-sm text-label-mono-sm text-primary underline tracking-wide uppercase shrink-0 ml-space-sm" onclick="this.closest('#bt-alert').style.display='none'" type="button">
+        Enable
+      </button>
+</div>
+</div>
+<!-- Peer Section Header -->
+<div class="px-margin pb-space-xs flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-outline tracking-wider uppercase">Discovered Peers (4)</span>
+<span class="font-label-mono-sm text-label-mono-sm text-outline">PHY 2M</span>
+</div>
+<!-- Flat List Layout without nested cards -->
+<div class="w-full flex flex-col">
+<!-- Row 1: Aditya (Connected) -->
+<div class="px-margin py-3.5 flex items-center justify-between bg-surface hover:bg-surface-container-low transition-colors cursor-pointer select-none group">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary shrink-0" title="Connected"></span>
+<div class="flex items-baseline gap-space-sm min-w-0 truncate">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate">aditya</span>
+<span class="font-label-mono-sm text-label-mono-sm text-outline font-normal shrink-0">b881 33d0</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 pl-space-sm">
+<span class="font-label-mono-sm text-label-mono-sm text-outline">-58 dBm · MTU 517</span>
+<span class="material-symbols-outlined text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+<!-- Separation strip -->
+<div class="h-[1px] w-full bg-surface-container-high"></div>
+<!-- Row 2: Krishiv (Connected) -->
+<div class="px-margin py-3.5 flex items-center justify-between bg-surface hover:bg-surface-container-low transition-colors cursor-pointer select-none group">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary shrink-0" title="Connected"></span>
+<div class="flex items-baseline gap-space-sm min-w-0 truncate">
+<span class="font-body-md text-body-md text-on-surface font-medium truncate">krishiv</span>
+<span class="font-label-mono-sm text-label-mono-sm text-outline font-normal shrink-0">5c29 aa10</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 pl-space-sm">
+<span class="font-label-mono-sm text-label-mono-sm text-outline">-72 dBm · MTU 517</span>
+<span class="material-symbols-outlined text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+<!-- Separation strip -->
+<div class="h-[1px] w-full bg-surface-container-high"></div>
+<!-- Row 3: Shadow-fox (Standby) -->
+<div class="px-margin py-3.5 flex items-center justify-between bg-surface hover:bg-surface-container-low transition-colors cursor-pointer select-none group">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="w-1.5 h-1.5 rounded-full bg-outline shrink-0" title="Standby"></span>
+<div class="flex items-baseline gap-space-sm min-w-0 truncate">
+<span class="font-body-md text-body-md text-on-surface-variant font-medium truncate">shadow-fox</span>
+<span class="font-label-mono-sm text-label-mono-sm text-outline font-normal shrink-0">19df 55e2</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 pl-space-sm">
+<span class="font-label-mono-sm text-label-mono-sm text-outline">-86 dBm · MTU 247</span>
+<span class="material-symbols-outlined text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+<!-- Separation strip -->
+<div class="h-[1px] w-full bg-surface-container-high"></div>
+<!-- Row 4: Node-8f4c (Discovered) -->
+<div class="px-margin py-3.5 flex items-center justify-between bg-surface hover:bg-surface-container-low transition-colors cursor-pointer select-none group">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="w-1.5 h-1.5 rounded-full bg-outline shrink-0" title="Discovered"></span>
+<div class="flex items-baseline gap-space-sm min-w-0 truncate">
+<span class="font-body-md text-body-md text-on-surface-variant font-medium truncate">node-8f4c</span>
+<span class="font-label-mono-sm text-label-mono-sm text-outline font-normal shrink-0">fa88 3102</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm shrink-0 pl-space-sm">
+<span class="font-label-mono-sm text-label-mono-sm text-outline">-91 dBm · MTU 23</span>
+<span class="material-symbols-outlined text-[14px] text-outline opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+</div>
+<!-- Separation strip -->
+<div class="h-[1px] w-full bg-surface-container-high"></div>
+</div>
+<!-- Tactile Micro-Diagnostic Footer Area -->
+<div class="px-margin mt-space-2xl pt-space-lg flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<span class="font-label-mono-sm text-label-mono-sm text-outline uppercase tracking-wider">Broadcast Footprint</span>
+<span class="font-label-mono-sm text-label-mono-sm text-secondary">EPHEMERAL</span>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg flex flex-col gap-space-xs font-label-mono-sm text-label-mono-sm">
+<div class="flex justify-between items-center text-outline">
+<span>SESSION PUBKEY</span>
+<span class="text-on-surface select-all">ed25519::4a71..e902</span>
+</div>
+<div class="flex justify-between items-center text-outline">
+<span>PEER HOP LIMIT</span>
+<span class="text-on-surface">3 (LOCAL MESH)</span>
+</div>
+</div>
+</div>
+</div></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface/80 backdrop-blur-xl" data-active-classes="text-on-surface font-medium"><div class="h-16 px-gutter flex items-center justify-around"><a class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 text-outline hover:text-on-surface transition-colors" data-path="chat-screen" href="#"><span class="material-symbols-outlined text-[20px]">chat_bubble</span><span class="font-label-mono-sm text-label-mono-sm tracking-wide uppercase">Chats</span></a><a aria-current="page" class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 transition-colors text-on-surface font-medium" data-path="nearby-peers" href="#"><span class="material-symbols-outlined text-[20px]">hub</span><span class="font-label-mono-sm text-label-mono-sm tracking-wide uppercase">Peers</span></a><a class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 text-outline hover:text-on-surface transition-colors" data-path="content-filter" href="#"><span class="material-symbols-outlined text-[20px]">filter_list</span><span class="font-label-mono-sm text-label-mono-sm tracking-wide uppercase">Filter</span></a><a class="min-w-[44px] min-h-[44px] flex flex-col items-center justify-center gap-1 text-outline hover:text-on-surface transition-colors" data-path="network-benchmark" href="#"><span class="material-symbols-outlined text-[20px]">speed</span><span class="font-label-mono-sm text-label-mono-sm tracking-wide uppercase">Bench</span></a></div></nav></body></html>

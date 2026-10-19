@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_blank" name="shell-type"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0a122a;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#68000a", "error-container": "#93000a", "on-surface-variant": "#d8c3ad", "on-tertiary-container": "#8d0012", "background": "#0a122a", "on-primary": "#472a00", "on-secondary-fixed-variant": "#005236", "primary-fixed-dim": "#ffb95f", "inverse-surface": "#dbe1ff", "tertiary-fixed": "#ffdad7", "tertiary-container": "#ff938c", "on-primary-fixed-variant": "#653e00", "surface-container-low": "#131a33", "surface-container": "#171e37", "surface": "#0a122a", "on-primary-fixed": "#2a1700", "error": "#ffb4ab", "on-secondary": "#003824", "tertiary-fixed-dim": "#ffb3ad", "on-secondary-fixed": "#002113", "on-error": "#690005", "surface-container-high": "#212942", "secondary-container": "#00a572", "on-background": "#dbe1ff", "on-primary-container": "#613b00", "tertiary": "#ffbcb7", "on-surface": "#dbe1ff", "outline-variant": "#534434", "on-error-container": "#ffdad6", "primary-container": "#f59e0b", "secondary-fixed-dim": "#4edea3", "on-tertiary-fixed-variant": "#930013", "inverse-on-surface": "#282f49", "surface-variant": "#2c344d", "surface-bright": "#313852", "surface-container-highest": "#2c344d", "outline": "#a08e7a", "inverse-primary": "#855300", "primary": "#ffc174", "surface-container-lowest": "#050d25", "surface-dim": "#0a122a", "surface-tint": "#ffb95f", "on-tertiary-fixed": "#410004", "secondary-fixed": "#6ffbbe", "secondary": "#4edea3", "on-secondary-container": "#00311f", "primary-fixed": "#ffddb8" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "margin": "1rem", "space-sm": "0.5rem", "space-lg": "1rem", "space-xl": "1.5rem", "space-md": "0.75rem", "gutter": "0.75rem" }, "fontFamily": { "headline-lg": ["Inter"], "label-lg": ["Inter"], "body-lg": ["Inter"], "code-md": ["JetBrains Mono"], "headline-sm": ["Inter"], "code-sm": ["JetBrains Mono"], "body-md": ["Inter"], "label-sm": ["JetBrains Mono"], "headline-md": ["Inter"], "label-md": ["JetBrains Mono"], "body-sm": ["Inter"] }, "fontSize": { "headline-lg": ["30px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "code-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "code-sm": ["11px", { "lineHeight": "14px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } }</script></head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary"><main class="flex-1 flex flex-col relative w-full pt-safe pb-safe bg-surface min-h-screen"><div class="flex flex-col w-full px-margin pb-space-xl">
+<!-- Status & Step Header -->
+<div class="flex flex-col gap-space-xs mt-space-sm mb-space-md">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Step 1 of 1 • Provisioning</span>
+<div class="flex items-center gap-space-xs px-space-sm py-0.5 rounded-full bg-surface-container-high text-secondary">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-secondary tracking-wider font-semibold">OFFLINE SECURE ENCLAVE</span>
+</div>
+</div>
+<h1 class="font-headline-md text-headline-md text-on-surface">Identity Generation</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Initialize physical hardware security keys for offline mesh discovery and mutual verification.</p>
+</div>
+<!-- Ambient Tactical Backdrop Glow -->
+<div class="relative flex flex-col gap-space-md">
+<!-- Call Sign Input Section -->
+<div class="flex flex-col bg-surface-container-low rounded-xl p-space-md shadow-md">
+<label class="font-label-md text-label-md text-on-surface-variant mb-space-xs flex items-center justify-between" for="callsign-input">
+<span>Alias / Call sign</span>
+<span class="text-secondary font-code-sm text-code-sm flex items-center gap-1" id="handle-status">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+<span>Valid handle</span>
+</span>
+</label>
+<div class="relative flex items-center rounded-lg bg-surface-container-high px-space-md py-2.5">
+<span class="material-symbols-outlined text-primary text-[20px] mr-2">tag</span>
+<input class="w-full bg-transparent font-code-md text-code-md text-on-surface focus:outline-none placeholder:text-outline" id="callsign-input" maxlength="32" placeholder="Enter mesh alias..." type="text" value="Ghost_Node_71"/>
+<button aria-label="Regenerate Call Sign" class="text-outline hover:text-primary transition-colors p-1" id="regen-btn" type="button">
+<span class="material-symbols-outlined text-[18px]">cached</span>
+</button>
+</div>
+<div class="flex items-center justify-between mt-space-xs px-1">
+<span class="font-body-sm text-body-sm text-outline">Visible to localized BLE discovery</span>
+<span class="font-code-sm text-code-sm text-primary" id="char-counter">13 / 32 chars</span>
+</div>
+</div>
+<!-- Cryptographic Fingerprint Card -->
+<div class="flex flex-col bg-surface-container rounded-xl p-space-md shadow-md">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">vpn_key</span>
+<span class="font-label-md text-label-md text-on-surface">ECDSA &amp; X25519 Identity Key</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-highest">
+<span class="material-symbols-outlined text-secondary text-[12px]">security</span>
+<span class="font-label-sm text-label-sm text-secondary truncate max-w-[150px]">StrongBox Enclave</span>
+</div>
+</div>
+<!-- Hex Digest with Tactical Copier -->
+<div class="flex items-center justify-between bg-surface-container-lowest rounded-lg p-space-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Public Key Fingerprint</span>
+<span class="font-code-md text-code-md font-bold text-secondary tracking-wider mt-0.5 select-all" id="fp-text">A4F9:82C1:09E3:77B2</span>
+</div>
+<button aria-label="Copy key fingerprint" class="flex items-center gap-1 py-1.5 px-space-sm rounded-lg bg-surface-container hover:bg-surface-container-high transition-colors text-primary active:scale-95" id="copy-btn" type="button">
+<span class="material-symbols-outlined text-[16px]" id="copy-icon">content_copy</span>
+<span class="font-code-sm text-code-sm" id="copy-label">Copy</span>
+</button>
+</div>
+<div class="flex items-center justify-between mt-space-xs text-on-surface-variant px-1">
+<span class="font-body-sm text-body-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">verified_user</span>
+          Ephemeral curve25519
+        </span>
+<span class="font-code-sm text-code-sm text-outline">Epoch: 0x01</span>
+</div>
+</div>
+<!-- Peer Pairing Optical Sync (QR Card) -->
+<div class="flex flex-col items-center bg-surface-container rounded-xl p-space-md shadow-md">
+<div class="flex items-center justify-between w-full mb-space-sm">
+<span class="font-label-md text-label-md text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">qr_code_2</span>
+          Mutual Optical Handshake
+        </span>
+<span class="font-code-sm text-code-sm text-primary">TOFU READY</span>
+</div>
+<!-- QR Visual Presentation Container -->
+<div class="relative p-space-md rounded-2xl bg-surface-container-lowest flex items-center justify-center my-space-xs shadow-inner">
+<!-- Tactical Reticle Corners -->
+<div class="absolute top-2 left-2 w-4 h-4 rounded-tl-sm bg-primary/20 flex items-start justify-start">
+<div class="w-2 h-0.5 bg-primary"></div>
+</div>
+<div class="absolute top-2 right-2 w-4 h-4 rounded-tr-sm bg-primary/20 flex items-start justify-end">
+<div class="w-2 h-0.5 bg-primary"></div>
+</div>
+<div class="absolute bottom-2 left-2 w-4 h-4 rounded-bl-sm bg-primary/20 flex items-end justify-start">
+<div class="w-2 h-0.5 bg-primary"></div>
+</div>
+<div class="absolute bottom-2 right-2 w-4 h-4 rounded-br-sm bg-primary/20 flex items-end justify-end">
+<div class="w-2 h-0.5 bg-primary"></div>
+</div>
+<!-- Rendered High-Contrast Crisp QR Graphic -->
+<div class="relative w-44 h-44 bg-surface-container-lowest p-2 rounded-lg flex items-center justify-center">
+<svg class="w-full h-full text-on-surface" fill="currentColor" shape-rendering="crispEdges" viewbox="0 0 100 100">
+<!-- Position Detection Patterns Top-Left -->
+<path d="M4,4 h28 v28 h-28 z M8,8 h20 v20 h-20 z M12,12 h12 v12 h-12 z"></path>
+<!-- Position Detection Patterns Top-Right -->
+<path d="M68,4 h28 v28 h-28 z M72,8 h20 v20 h-20 z M76,12 h12 v12 h-12 z"></path>
+<!-- Position Detection Patterns Bottom-Left -->
+<path d="M4,68 h28 v28 h-28 z M8,72 h20 v20 h-20 z M12,76 h12 v12 h-12 z"></path>
+<!-- Timing & Random Data Matrix Modules -->
+<path d="M36,6 h4 v4 h-4 z M44,6 h4 v4 h-4 z M52,6 h4 v4 h-4 z M60,6 h4 v4 h-4 z"></path>
+<path d="M6,36 h4 v4 h-4 z M6,44 h4 v4 h-4 z M6,52 h4 v4 h-4 z M6,60 h4 v4 h-4 z"></path>
+<path d="M36,14 h4 v4 h-4 z M48,14 h8 v4 h-8 z M60,14 h4 v4 h-4 z"></path>
+<path d="M40,22 h12 v4 h-12 z M56,22 h4 v4 h-4 z"></path>
+<path d="M14,36 h6 v4 h-6 z M24,36 h8 v4 h-8 z M36,36 h8 v8 h-8 z M48,36 h4 v4 h-4 z M56,36 h8 v4 h-8 z M68,36 h12 v4 h-12 z M84,36 h8 v4 h-8 z"></path>
+<path d="M14,44 h4 v8 h-4 z M24,44 h8 v4 h-8 z M44,40 h4 v12 h-4 z M52,44 h8 v8 h-8 z M68,44 h4 v4 h-4 z M80,44 h8 v4 h-8 z M92,44 h4 v8 h-4 z"></path>
+<path d="M20,52 h4 v12 h-4 z M28,56 h4 v4 h-4 z M64,52 h4 v4 h-4 z M76,52 h12 v4 h-12 z"></path>
+<path d="M14,64 h12 v4 h-12 z M36,60 h8 v8 h-8 z M48,60 h4 v4 h-4 z M60,60 h4 v4 h-4 z M84,60 h12 v4 h-12 z"></path>
+<path d="M36,72 h4 v8 h-4 z M44,68 h12 v4 h-12 z M68,68 h8 v4 h-8 z M88,68 h4 v12 h-4 z"></path>
+<path d="M40,80 h8 v4 h-8 z M52,76 h4 v12 h-4 z M60,84 h12 v4 h-12 z M80,84 h4 v4 h-4 z"></path>
+<path d="M36,88 h8 v8 h-8 z M48,92 h12 v4 h-12 z M68,92 h4 v4 h-4 z M76,88 h8 v8 h-8 z M88,88 h8 v4 h-8 z"></path>
+</svg>
+<!-- Tactical Center Icon Seal -->
+<div class="absolute inset-0 m-auto w-9 h-9 rounded-full bg-surface-container-lowest p-1 flex items-center justify-center shadow-lg">
+<div class="w-full h-full rounded-full bg-primary flex items-center justify-center text-on-primary font-bold">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+</div>
+</div>
+</div>
+</div>
+<p class="font-body-sm text-body-sm text-center text-on-surface-variant max-w-[280px] mt-space-xs">
+        Scan in-person to establish zero-trust <span class="text-primary font-medium">TOFU</span> (Trust On First Use) mesh route.
+      </p>
+</div>
+<!-- Tactical Action Controls -->
+<div class="flex flex-col gap-space-sm mt-space-xs">
+<!-- Primary Action CTA -->
+<button class="w-full h-12 px-space-lg rounded-full bg-primary-container text-on-primary font-label-lg text-label-lg flex items-center justify-center gap-2 active:opacity-90 shadow-lg transition-transform active:scale-[0.98]" id="camera-scan-btn" type="button">
+<span class="material-symbols-outlined text-[20px]">photo_camera</span>
+<span>Scan Peer QR (CameraX)</span>
+</button>
+<!-- Secondary Action CTA -->
+<button class="w-full h-12 px-space-lg rounded-full bg-surface-container-high hover:bg-surface-bright text-primary font-label-lg text-label-lg flex items-center justify-center gap-2 active:bg-surface-variant transition-colors" id="continue-mesh-btn" type="button">
+<span>Continue to Mesh</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+<!-- Cryptographic Architecture Microcopy Footer -->
+<div class="flex items-center justify-center gap-1.5 mt-space-xs text-center px-space-sm">
+<span class="material-symbols-outlined text-[14px] text-outline">sensors_off</span>
+<p class="font-code-sm text-code-sm text-outline">
+        No servers. No phone numbers. Pure decentralized BLE advertising &amp; scanning.
+      </p>
+</div>
+</div>
+</div>
+<script>
+  (function initP2COnboarding() {
+    const input = document.getElementById('callsign-input');
+    const counter = document.getElementById('char-counter');
+    const handleStatus = document.getElementById('handle-status');
+    const copyBtn = document.getElementById('copy-btn');
+    const copyIcon = document.getElementById('copy-icon');
+    const copyLabel = document.getElementById('copy-label');
+    const regenBtn = document.getElementById('regen-btn');
+    const fpText = document.getElementById('fp-text');
+
+    const randomNodes = [
+      'Specter_Node_09', 'Cipher_Fox_42', 'Null_Apex_88', 
+      'Echo_Vanguard_19', 'Rogue_Relay_04', 'Ghost_Node_71'
+    ];
+
+    const fingerprints = [
+      'A4F9:82C1:09E3:77B2',
+      'F12D:B904:47E1:CC81',
+      '88CA:5E20:01FF:39D0',
+      '37A0:98C2:BE04:F711'
+    ];
+
+    if (input && counter && handleStatus) {
+      input.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        const len = val.length;
+        counter.textContent = `${len} / 32 chars`;
+
+        if (len < 3) {
+          handleStatus.innerHTML = `<span class="material-symbols-outlined text-[14px] text-error">cancel</span><span class="text-error">Too short</span>`;
+        } else {
+          handleStatus.innerHTML = `<span class="material-symbols-outlined text-[14px] text-secondary">check_circle</span><span class="text-secondary">Valid handle</span>`;
+        }
+      });
+    }
+
+    if (regenBtn && input && counter) {
+      regenBtn.addEventListener('click', () => {
+        const current = input.value;
+        const available = randomNodes.filter(n => n !== current);
+        const next = available[Math.floor(Math.random() * available.length)];
+        input.value = next;
+        counter.textContent = `${next.length} / 32 chars`;
+        
+        // Slightly rotate icon for mechanical feedback
+        regenBtn.style.transform = 'rotate(180deg)';
+        regenBtn.style.transition = 'transform 0.25s ease';
+        setTimeout(() => {
+          regenBtn.style.transform = 'none';
+        }, 250);
+
+        // Also rotate public key hash
+        const currentFp = fpText.textContent;
+        const availableFps = fingerprints.filter(f => f !== currentFp);
+        fpText.textContent = availableFps[Math.floor(Math.random() * availableFps.length)];
+      });
+    }
+
+    if (copyBtn && copyIcon && copyLabel && fpText) {
+      copyBtn.addEventListener('click', () => {
+        const text = fpText.textContent;
+        navigator.clipboard?.writeText(text).catch(() => {});
+        copyIcon.textContent = 'done';
+        copyLabel.textContent = 'Copied';
+        copyBtn.classList.add('bg-secondary/20', 'text-secondary');
+
+        setTimeout(() => {
+          copyIcon.textContent = 'content_copy';
+          copyLabel.textContent = 'Copy';
+          copyBtn.classList.remove('bg-secondary/20', 'text-secondary');
+        }, 2000);
+      });
+    }
+  })();
+</script></main></body></html>

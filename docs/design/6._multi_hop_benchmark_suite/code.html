@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#0a122a;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "on-tertiary": "#68000a", "error-container": "#93000a", "on-surface-variant": "#d8c3ad", "on-tertiary-container": "#8d0012", "background": "#0a122a", "on-primary": "#472a00", "on-secondary-fixed-variant": "#005236", "primary-fixed-dim": "#ffb95f", "inverse-surface": "#dbe1ff", "tertiary-fixed": "#ffdad7", "tertiary-container": "#ff938c", "on-primary-fixed-variant": "#653e00", "surface-container-low": "#131a33", "surface-container": "#171e37", "surface": "#0a122a", "on-primary-fixed": "#2a1700", "error": "#ffb4ab", "on-secondary": "#003824", "tertiary-fixed-dim": "#ffb3ad", "on-secondary-fixed": "#002113", "on-error": "#690005", "surface-container-high": "#212942", "secondary-container": "#00a572", "on-background": "#dbe1ff", "on-primary-container": "#613b00", "tertiary": "#ffbcb7", "on-surface": "#dbe1ff", "outline-variant": "#534434", "on-error-container": "#ffdad6", "primary-container": "#f59e0b", "secondary-fixed-dim": "#4edea3", "on-tertiary-fixed-variant": "#930013", "inverse-on-surface": "#282f49", "surface-variant": "#2c344d", "surface-bright": "#313852", "surface-container-highest": "#2c344d", "outline": "#a08e7a", "inverse-primary": "#855300", "primary": "#ffc174", "surface-container-lowest": "#050d25", "surface-dim": "#0a122a", "surface-tint": "#ffb95f", "on-tertiary-fixed": "#410004", "secondary-fixed": "#6ffbbe", "secondary": "#4edea3", "on-secondary-container": "#00311f", "primary-fixed": "#ffddb8" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "margin": "1rem", "space-sm": "0.5rem", "space-lg": "1rem", "space-xl": "1.5rem", "space-md": "0.75rem", "gutter": "0.75rem" }, "fontFamily": { "headline-lg": ["Inter"], "label-lg": ["Inter"], "body-lg": ["Inter"], "code-md": ["JetBrains Mono"], "headline-sm": ["Inter"], "code-sm": ["JetBrains Mono"], "body-md": ["Inter"], "label-sm": ["JetBrains Mono"], "headline-md": ["Inter"], "label-md": ["JetBrains Mono"], "body-sm": ["Inter"] }, "fontSize": { "headline-lg": ["30px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "code-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }], "code-sm": ["11px", { "lineHeight": "14px", "fontWeight": "400" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }], "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }] } } } }</script></head><body class="bg-surface text-on-surface font-body-md text-body-md flex flex-col min-h-screen selection:bg-primary-container selection:text-on-primary"><header class="fixed top-0 w-full z-50 bg-surface/85 backdrop-blur-xl pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.45)]"><div class="h-6 px-margin flex items-center justify-between text-on-surface-variant font-code-sm text-code-sm select-none"><span class="font-medium tracking-tight text-on-surface">09:41</span><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[14px]">bluetooth_searching</span><span class="material-symbols-outlined text-[14px]">network_cell</span><span class="material-symbols-outlined text-[14px]">battery_charging_full</span></div></div><div class="h-14 px-margin flex items-center justify-between gap-space-sm"><div class="flex items-center gap-space-sm min-w-0 flex-1"><img alt="P2Chat Tactical Mesh Logo" class="h-8 w-auto object-contain flex-shrink-0" src="https://lh3.googleusercontent.com/aida/AEtjO1X2bpdoyQvWVsJZfySNZDse0HSxJROKV5K345od3GfqEslvk9vuAA2v4vpUGKy1lAhJCvHSrx3NppmdKwpg2cBC3BEheztMmgCT5dPrH8CJyXANSYPj9GyxDFnF60FKwxb57d2SPV-MzXPuU7JrV4Xf5lIbQ-Rf_ttdASmoY8y45KhaW2gnKXVYsWPGrJc2ctpGT6VoEvVwNHf3272KWLcATEHdBC-3xWy1sxCzJdXNPYqjZSGlFERm9A"/><div class="flex flex-col min-w-0"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-primary tracking-tight font-bold truncate">P2Chat</span><span class="text-on-surface-variant/40 font-code-sm text-code-sm">/</span><span class="font-label-md text-label-md text-on-surface font-medium truncate">Bench</span></div><div class="flex items-center gap-space-xs mt-0.5"><span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span></span><span class="font-code-sm text-code-sm text-secondary tracking-wider uppercase font-medium">MESH ONLINE</span><span class="text-outline-variant font-code-sm text-code-sm">•</span><span class="font-code-sm text-code-sm text-on-surface-variant">6 NODES</span></div></div></div><div class="flex items-center gap-space-sm flex-shrink-0"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="flex-1 flex flex-col relative w-full pt-20 pb-20 bg-surface min-h-screen"><div class="flex flex-col w-full px-margin space-y-space-md">
+<!-- Status Overhead Toast / Hardware Banner -->
+<div class="flex items-center justify-between bg-surface-container-low px-space-md py-space-sm rounded-xl">
+<div class="flex items-center gap-space-xs min-w-0">
+<span class="material-symbols-outlined text-secondary text-[16px] animate-pulse">developer_board</span>
+<span class="font-code-sm text-code-sm text-secondary uppercase tracking-wider">Nordic nRF52840</span>
+<span class="text-on-surface-variant/40 font-code-sm text-code-sm">/</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant truncate">2M PHY Active</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="font-code-sm text-code-sm text-secondary">AIR-GAPPED</span>
+</div>
+</div>
+<!-- Role Selector & Parameters Card -->
+<div class="bg-surface-container rounded-xl p-space-md shadow-md flex flex-col gap-space-md">
+<!-- Header with Operational Mode -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px]">tune</span>
+<span class="font-label-lg text-label-lg text-on-surface tracking-tight">Test Protocol Engine</span>
+</div>
+<span class="bg-surface-container-high px-space-xs py-0.5 rounded text-on-surface-variant font-code-sm text-code-sm">SEQ #0981</span>
+</div>
+<!-- Segmented Button: Role Selector -->
+<div class="grid grid-cols-2 p-1 bg-surface-container-lowest rounded-full select-none" id="role-toggle">
+<button class="role-btn active flex items-center justify-center gap-space-xs py-2 px-space-sm rounded-full bg-primary-container text-on-primary font-label-md text-label-md transition-all duration-150" onclick="selectRole(this, 'sender')" type="button">
+<span class="material-symbols-outlined text-[16px]">bolt</span>
+<span class="tracking-tight font-bold">Burst Sender</span>
+</button>
+<button class="role-btn flex items-center justify-center gap-space-xs py-2 px-space-sm rounded-full text-on-surface-variant font-label-md text-label-md transition-all duration-150" onclick="selectRole(this, 'echo')" type="button">
+<span class="material-symbols-outlined text-[16px]">replay</span>
+<span class="tracking-tight font-medium">Echo / Ack Node</span>
+</button>
+</div>
+<!-- Parameter Chips Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Burst Count -->
+<button class="flex flex-col p-space-sm bg-surface-container-high rounded-lg text-left active:scale-[0.98] transition-transform" type="button">
+<div class="flex items-center justify-between w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Burst Count</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[14px]">edit</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-code-md text-code-md text-primary font-semibold">100</span>
+<span class="font-code-sm text-code-sm text-on-surface">pkts</span>
+</div>
+</button>
+<!-- Interval -->
+<button class="flex flex-col p-space-sm bg-surface-container-high rounded-lg text-left active:scale-[0.98] transition-transform" type="button">
+<div class="flex items-center justify-between w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cadence</span>
+<span class="material-symbols-outlined text-on-surface-variant text-[14px]">timer</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-code-md text-code-md text-primary font-semibold">100</span>
+<span class="font-code-sm text-code-sm text-on-surface">ms</span>
+</div>
+</button>
+<!-- Payload -->
+<button class="flex flex-col p-space-sm bg-surface-container-high rounded-lg text-left active:scale-[0.98] transition-transform" type="button">
+<div class="flex items-center justify-between w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">MTU Buffer</span>
+<span class="material-symbols-outlined text-secondary text-[14px]">data_array</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-code-md text-code-md text-on-surface font-semibold">350 B</span>
+<span class="font-code-sm text-code-sm text-secondary">BLE MAX</span>
+</div>
+</button>
+<!-- TTL Sweep -->
+<button class="flex flex-col p-space-sm bg-surface-container-high rounded-lg text-left active:scale-[0.98] transition-transform" type="button">
+<div class="flex items-center justify-between w-full">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Relay Radius</span>
+<span class="material-symbols-outlined text-primary text-[14px]">alt_route</span>
+</div>
+<div class="flex items-baseline gap-space-xs mt-1">
+<span class="font-code-md text-code-md text-primary font-semibold">1..7</span>
+<span class="font-code-sm text-code-sm text-on-surface">Hops</span>
+</div>
+</button>
+</div>
+</div>
+<!-- Real-Time Telemetry Grid (2x2 Material 3 cards) -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between px-space-xs">
+<span class="font-label-md text-label-md text-on-surface-variant tracking-wider uppercase">Mesh Telemetry Matrix</span>
+<span class="font-code-sm text-code-sm text-secondary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+        STREAMING
+      </span>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<!-- Card 1: RTT/2 Latency -->
+<div class="bg-surface-container rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">RTT/2 Latency</span>
+<span class="material-symbols-outlined text-primary text-[16px]">speed</span>
+</div>
+<div class="my-space-xs">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant font-medium">p50:</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">110</span>
+<span class="font-code-sm text-code-sm text-on-surface">ms</span>
+</div>
+<!-- Micro Sparkline SVG -->
+<div class="w-full h-7 mt-1.5 flex items-end gap-1">
+<div class="w-1.5 h-3 bg-surface-container-highest rounded-t-sm"></div>
+<div class="w-1.5 h-4 bg-surface-container-highest rounded-t-sm"></div>
+<div class="w-1.5 h-3.5 bg-primary/70 rounded-t-sm"></div>
+<div class="w-1.5 h-5 bg-primary rounded-t-sm"></div>
+<div class="w-1.5 h-4 bg-primary rounded-t-sm"></div>
+<div class="w-1.5 h-6 bg-primary rounded-t-sm"></div>
+<div class="w-1.5 h-7 bg-primary rounded-t-sm"></div>
+<div class="w-1.5 h-4.5 bg-primary/80 rounded-t-sm"></div>
+<div class="w-1.5 h-3 bg-surface-container-highest rounded-t-sm"></div>
+<div class="w-1.5 h-5.5 bg-primary rounded-t-sm"></div>
+</div>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant mt-0.5 pt-1 bg-surface-container-high/50 px-1.5 py-0.5 rounded">
+          p95: <span class="text-tertiary font-semibold">380 ms</span>
+</div>
+</div>
+<!-- Card 2: Multi-Hop PDR -->
+<div class="bg-surface-container rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Multi-Hop PDR</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">verified</span>
+</div>
+<div class="my-space-xs">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-lg text-headline-lg text-secondary font-bold tracking-tight">97.4</span>
+<span class="font-code-md text-code-md text-secondary font-semibold">%</span>
+</div>
+<!-- Mini Progress Track -->
+<div class="w-full bg-surface-container-highest h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 97.4%;"></div>
+</div>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant mt-0.5 line-clamp-1 truncate">
+          at TTL ≥ 2 (2 Hops / 3 relays)
+        </div>
+</div>
+<!-- Card 3: GATT Throughput -->
+<div class="bg-surface-container rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Throughput</span>
+<span class="material-symbols-outlined text-primary text-[16px]">sync_alt</span>
+</div>
+<div class="my-space-xs">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">18.4</span>
+<span class="font-code-sm text-code-sm text-primary font-medium">KB/s</span>
+</div>
+<!-- Transfer Indicator Wave -->
+<div class="flex items-center gap-1 mt-2">
+<span class="h-1 w-2 rounded bg-secondary animate-pulse"></span>
+<span class="h-1 w-4 rounded bg-secondary"></span>
+<span class="h-1 w-3 rounded bg-secondary/60"></span>
+<span class="h-1 w-5 rounded bg-primary"></span>
+<span class="h-1 w-2 rounded bg-primary/40"></span>
+</div>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant mt-0.5 truncate">
+          Peak: <span class="text-on-surface">22.1 KB/s</span> (MTU 517)
+        </div>
+</div>
+<!-- Card 4: TFLite Inference -->
+<div class="bg-surface-container rounded-xl p-space-md flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wide">Edge Inference</span>
+<span class="material-symbols-outlined text-secondary text-[16px]">psychology</span>
+</div>
+<div class="my-space-xs">
+<div class="flex items-baseline gap-space-xs">
+<span class="font-code-sm text-code-sm text-on-surface-variant font-medium">p50:</span>
+<span class="font-headline-sm text-headline-sm text-secondary font-bold tracking-tight">11</span>
+<span class="font-code-sm text-code-sm text-on-surface">ms</span>
+</div>
+<div class="flex items-center gap-1.5 mt-2">
+<span class="material-symbols-outlined text-secondary text-[14px]">memory</span>
+<span class="font-code-sm text-code-sm text-on-surface-variant truncate">NNAPI GPU Del</span>
+</div>
+</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant mt-0.5 bg-surface-container-high/50 px-1.5 py-0.5 rounded truncate">
+          p95: <span class="text-primary font-semibold">24 ms</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Live Packet Hop Waterfall Log Card -->
+<div class="bg-surface-container-lowest rounded-xl p-space-md flex flex-col gap-space-sm shadow-inner">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[16px]">waterfall_chart</span>
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wide font-semibold">Hop Waterfall Stream</span>
+</div>
+<div class="flex items-center gap-1.5">
+<span class="text-on-surface-variant font-code-sm text-code-sm">AUTO-SCROLL</span>
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+</div>
+</div>
+<!-- Waterfall Monospace Terminal Logs -->
+<div class="flex flex-col gap-1.5 overflow-hidden font-code-sm text-code-sm select-text" id="waterfall-log">
+<!-- Entry 1 -->
+<div class="flex flex-col bg-surface-container-low/80 p-2 rounded">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="text-on-surface-variant/80 font-mono">[14:32:01.102]</span>
+<span class="bg-primary/20 text-primary px-1 rounded text-[10px] font-bold">TX BURST</span>
+</div>
+<div class="text-on-surface mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+<span class="text-primary font-bold">#042</span>
+<span class="text-outline-variant">•</span>
+<span>350B</span>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary font-medium">TTL:3</span>
+<span class="text-on-surface-variant">→</span>
+<span class="bg-surface-container-high px-1 rounded text-on-surface">[Kestrel-9]</span>
+<span class="text-on-surface-variant font-mono">RSSI:-58</span>
+</div>
+</div>
+<!-- Entry 2 -->
+<div class="flex flex-col bg-surface-container-low/80 p-2 rounded">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="text-on-surface-variant/80 font-mono">[14:32:01.214]</span>
+<span class="bg-secondary/20 text-secondary px-1 rounded text-[10px] font-bold">RX ACK</span>
+</div>
+<div class="text-on-surface mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+<span class="text-secondary font-bold">ACK #042</span>
+<span class="text-outline-variant">•</span>
+<span>RTT: <span class="text-primary font-semibold">112ms</span></span>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary">Hops:2</span>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary-fixed">Loss:0%</span>
+</div>
+</div>
+<!-- Dynamic Insertion Point for Live Sim -->
+<div class="flex flex-col bg-surface-container-low/80 p-2 rounded opacity-90" id="log-waterfall-slot">
+<div class="flex items-center justify-between text-on-surface-variant">
+<span class="text-on-surface-variant/80 font-mono">[14:32:01.325]</span>
+<span class="bg-secondary/20 text-secondary px-1 rounded text-[10px] font-bold">RELAY HOP</span>
+</div>
+<div class="text-on-surface mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+<span class="text-primary font-bold">#043</span>
+<span class="text-outline-variant">•</span>
+<span>350B</span>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary">TTL:2</span>
+<span class="text-on-surface-variant">→</span>
+<span class="bg-surface-container-high px-1 rounded text-on-surface">[Falcon-4]</span>
+<span class="text-on-surface-variant font-mono">RSSI:-64</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Tactical Action Bar -->
+<div class="flex items-center gap-space-sm pt-space-xs pb-space-lg">
+<!-- Primary Tactical Action: Run Benchmark -->
+<button class="flex-1 h-12 bg-primary-container text-on-primary rounded-full font-label-lg text-label-lg font-bold flex items-center justify-center gap-space-xs shadow-lg active:scale-95 transition-all" id="bench-toggle-btn" onclick="toggleBenchmark()" type="button">
+<span class="material-symbols-outlined text-[20px]" id="bench-icon">play_arrow</span>
+<span class="tracking-wide uppercase" id="bench-btn-label">Start Benchmark Run</span>
+</button>
+<!-- Secondary Tonal Action: Export CSV -->
+<button class="h-12 w-12 bg-surface-container-high text-on-surface rounded-full flex items-center justify-center active:scale-90 transition-transform shadow-md" onclick="exportTelemetry(this)" title="Export CSV Telemetry" type="button">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+</div>
+</div>
+<script>
+  function selectRole(button, role) {
+    const parent = document.getElementById('role-toggle');
+    const buttons = parent.querySelectorAll('.role-btn');
+    buttons.forEach(btn => {
+      btn.classList.remove('bg-primary-container', 'text-on-primary', 'font-bold');
+      btn.classList.add('text-on-surface-variant', 'font-medium');
+    });
+    button.classList.add('bg-primary-container', 'text-on-primary', 'font-bold');
+    button.classList.remove('text-on-surface-variant', 'font-medium');
+  }
+
+  let isRunning = false;
+  let runInterval = null;
+  let pktSequence = 44;
+
+  function toggleBenchmark() {
+    const btn = document.getElementById('bench-toggle-btn');
+    const label = document.getElementById('bench-btn-label');
+    const icon = document.getElementById('bench-icon');
+    const waterfall = document.getElementById('waterfall-log');
+
+    isRunning = !isRunning;
+
+    if (isRunning) {
+      btn.classList.remove('bg-primary-container', 'text-on-primary');
+      btn.classList.add('bg-error', 'text-on-error');
+      label.textContent = 'Halt Current Sweep';
+      icon.textContent = 'stop';
+
+      runInterval = setInterval(() => {
+        pktSequence++;
+        const now = new Date();
+        const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+        const nodes = ['Kestrel-9', 'Osprey-2', 'Echo-Alpha', 'Vanguard-1'];
+        const randomNode = nodes[Math.floor(Math.random() * nodes.length)];
+        const rssi = -55 - Math.floor(Math.random() * 20);
+        const rtt = 105 + Math.floor(Math.random() * 30);
+
+        const newEntry = document.createElement('div');
+        newEntry.className = 'flex flex-col bg-surface-container-low/80 p-2 rounded animate-fadeIn';
+        newEntry.innerHTML = `
+          <div class="flex items-center justify-between text-on-surface-variant">
+            <span class="text-on-surface-variant/80 font-mono">[${timeStr}]</span>
+            <span class="bg-secondary/20 text-secondary px-1 rounded text-[10px] font-bold">RX ACK</span>
+          </div>
+          <div class="text-on-surface mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+            <span class="text-secondary font-bold">ACK #${String(pktSequence).padStart(3, '0')}</span>
+            <span class="text-outline-variant">•</span>
+            <span>RTT: <span class="text-primary font-semibold">${rtt}ms</span></span>
+            <span class="text-outline-variant">•</span>
+            <span class="text-secondary">Hops:2</span>
+            <span class="text-outline-variant">•</span>
+            <span class="text-on-surface-variant font-mono">[${randomNode}]</span>
+            <span class="text-on-surface-variant font-mono">RSSI:${rssi}</span>
+          </div>
+        `;
+
+        if (waterfall.children.length > 5) {
+          waterfall.removeChild(waterfall.firstElementChild);
+        }
+        waterfall.appendChild(newEntry);
+      }, 1200);
+
+    } else {
+      clearInterval(runInterval);
+      btn.classList.remove('bg-error', 'text-on-error');
+      btn.classList.add('bg-primary-container', 'text-on-primary');
+      label.textContent = 'Start Benchmark Run';
+      icon.textContent = 'play_arrow';
+    }
+  }
+
+  function exportTelemetry(btn) {
+    const icon = btn.querySelector('.material-symbols-outlined');
+    const original = icon.textContent;
+    icon.textContent = 'check';
+    btn.classList.add('text-secondary');
+    setTimeout(() => {
+      icon.textContent = original;
+      btn.classList.remove('text-secondary');
+    }, 1500);
+  }
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-surface-container-low/95 backdrop-blur-xl shadow-[0_-2px_12px_rgba(0,0,0,0.5)]" data-active-classes="bg-primary-container text-on-primary [&amp;_.nav-pill]:bg-primary-container [&amp;_.nav-icon]:text-on-primary [&amp;_.nav-label]:text-primary [&amp;_.nav-label]:font-semibold"><div class="h-16 px-space-sm flex items-center justify-around"><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] gap-0.5 group" data-path="chats" href="#"><div class="nav-pill w-16 h-8 rounded-full flex items-center justify-center transition-all duration-200"><span class="material-symbols-outlined nav-icon text-on-surface-variant text-[22px] transition-colors">forum</span></div><span class="nav-label font-label-md text-label-md text-on-surface-variant tracking-wide transition-colors truncate">Chats</span></a><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] gap-0.5 group" data-path="radar" href="#"><div class="nav-pill w-16 h-8 rounded-full flex items-center justify-center transition-all duration-200"><span class="material-symbols-outlined nav-icon text-on-surface-variant text-[22px] transition-colors">radar</span></div><span class="nav-label font-label-md text-label-md text-on-surface-variant tracking-wide transition-colors truncate">Radar</span></a><a class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] gap-0.5 group" data-path="ai-filter" href="#"><div class="nav-pill w-16 h-8 rounded-full flex items-center justify-center transition-all duration-200"><span class="material-symbols-outlined nav-icon text-on-surface-variant text-[22px] transition-colors">security</span></div><span class="nav-label font-label-md text-label-md text-on-surface-variant tracking-wide transition-colors truncate">AI Filter</span></a><a aria-current="page" class="flex-1 flex flex-col items-center justify-center min-w-[44px] min-h-[44px] gap-0.5 group bg-primary-container text-on-primary [&amp;_.nav-pill]:bg-primary-container [&amp;_.nav-icon]:text-on-primary [&amp;_.nav-label]:text-primary [&amp;_.nav-label]:font-semibold" data-path="bench" href="#"><div class="nav-pill w-16 h-8 rounded-full flex items-center justify-center transition-all duration-200"><span class="material-symbols-outlined nav-icon text-on-surface-variant text-[22px] transition-colors">terminal</span></div><span class="nav-label font-label-md text-label-md text-on-surface-variant tracking-wide transition-colors truncate">Bench</span></a></div></nav></body></html>
