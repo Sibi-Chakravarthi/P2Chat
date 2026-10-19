@@ -1,0 +1,102 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "48b4548e31f9df90f1f2b9b347061ee2",
+    "entities": [
+      {
+        "tableName": "seen_messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `first_seen_ms` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenMs",
+            "columnName": "first_seen_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "packet_buffer",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `group_id` INTEGER NOT NULL, `packet_type` INTEGER NOT NULL, `frame` BLOB NOT NULL, `received_ttl` INTEGER NOT NULL, `stored_at_ms` INTEGER NOT NULL, `expires_at_ms` INTEGER NOT NULL, `priority` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packetType",
+            "columnName": "packet_type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frame",
+            "columnName": "frame",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedTtl",
+            "columnName": "received_ttl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storedAtMs",
+            "columnName": "stored_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtMs",
+            "columnName": "expires_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '48b4548e31f9df90f1f2b9b347061ee2')"
+    ]
+  }
+}

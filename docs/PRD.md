@@ -120,10 +120,10 @@ Single Android app. Material 3, dark theme only in Phase 1.
 | ID | Requirement |
 |---|---|
 | SEC-1 | P-256 (`secp256r1`) ECDH/ECDSA runs through the JCA/BouncyCastle provider when `minSdk = 26` (assumption), matching the Python `pycryptodome` reference; private keys are stored encrypted at rest under an Android Keystore AES-256-GCM master key, and on API 31+ (Android 12+, `PURPOSE_AGREE_KEY`) the Keystore may perform ECDH directly. |
-| SEC-2 | Pairwise secrets are derived with ECDH over the two parties' P-256 ECDH public keys (obtained in person via QR, or from the admin-signed roster) followed by HKDF-SHA256 (salt and info strings from `BleConstants.kt` / `scripts/wire_spec.py`, `TODO: confirm in T0.1`); there is no unauthenticated over-the-air key exchange in Phase 1 (D-15). |
+| SEC-2 | Pairwise secrets are derived with ECDH over the two parties' P-256 ECDH public keys (obtained in person via QR, or from the admin-signed roster) followed by HKDF-SHA256 (salt `P2Chat-v1-Pairwise-Salt` and info `P2Chat-v1-Pairwise-AES256GCM` from `BleConstants.kt` / `scripts/wire_spec.py`); there is no unauthenticated over-the-air key exchange in Phase 1 (D-15). |
 | SEC-3 | Group payloads are encrypted with AES-256-GCM under the admin-managed group key, using a fresh 12-byte random nonce and a 16-byte tag per message. |
 | SEC-4 | The core cryptographic blob is `nonce (12B) + tag (16B) + ciphertext_len (4B, uint32 big-endian) + ciphertext`, byte-identical to the Python reference. |
-| SEC-5 | The GCM AAD is exactly `packet_type (1B) + msg_id (8B) + group_id (4B) + sender_fp (8B) + key_epoch (2B)` with header field order and all multi-byte integers (big-endian) as defined by `BleConstants.kt` (`TODO: confirm in T0.1`); `ttl (1B)` is excluded from both the AAD and the signed bytes so relays can decrement it. Packet types: 0x01 CHAT, 0x02 KEY_ROTATE, 0x03 ROSTER_SYNC, 0x04 PAIRWISE_INVITE, 0x05 BENCH_DATA, 0x06 BENCH_ACK. |
+| SEC-5 | The GCM AAD is exactly `packet_type (1B) + msg_id (8B) + group_id (4B) + sender_fp (8B) + key_epoch (2B)` with header field order and all multi-byte integers (big-endian) as defined by `BleConstants.kt` / `scripts/wire_spec.py`; `ttl (1B)` is excluded from both the AAD and the signed bytes so relays can decrement it. Packet types: 0x01 CHAT, 0x02 KEY_ROTATE, 0x03 ROSTER_SYNC, 0x04 PAIRWISE_INVITE, 0x05 BENCH_DATA, 0x06 BENCH_ACK. |
 | SEC-6 | Every group message carries a raw 64-byte P-256 ECDSA signature (r concatenated with s) over the AAD fields and the core blob, excluding `ttl`, and a receiver verifies it **before** attempting decryption; failure drops the packet silently. |
 | SEC-7 | `KEY_ROTATE`, invite and roster control packets use the same envelope, are encrypted under the recipient's pairwise secret, and are signed by the admin. |
 | SEC-8 | Group creation generates a 256-bit key from `SecureRandom` and sets `key_epoch = 1`. |
@@ -164,7 +164,7 @@ stateDiagram-v2
 
 | ID | Requirement |
 |---|---|
-| NET-1 | Each node runs simultaneously as a BLE Peripheral (`BluetoothGattServer` + `BluetoothLeAdvertiser`) advertising the P2Chat service UUID (`TODO: confirm from BleConstants.kt`) and as a Central (`BluetoothLeScanner` + GATT client). |
+| NET-1 | Each node runs simultaneously as a BLE Peripheral (`BluetoothGattServer` + `BluetoothLeAdvertiser`) advertising the P2Chat service UUID (`6E400001-B5A3-F393-E0A9-E50E24DCCA9E` from `BleConstants.kt`) and as a Central (`BluetoothLeScanner` + GATT client). |
 | NET-2 | The scanner filters on the P2Chat service UUID and maintains at most 4 concurrent GATT connections (assumption); excess peers are queued and retried with backoff. |
 | NET-3 | After connecting, the client calls `requestMtu(517)`; when 517 is granted, each write carries at least 512 bytes of payload. |
 | NET-4 | If a smaller MTU is granted (down to 23), a deterministic chunker splits the frame into sequential characteristic writes and the receiver reassembles it; a partial frame is discarded after 5 s of inactivity and no reassembled frame may exceed 1,024 bytes (assumption). |
@@ -348,7 +348,7 @@ Scale assumptions: groups of at most 16 members, 1,000 buffered packets per node
 | D-18 | Centroid source | Centroids are built with the shipped quantized `.tflite` so runtime scores match calibration (approved 2026-10-18) |
 
 ### Still open
-- [ ] **D-1 (residual).** Exact UUID strings, HKDF salt/info strings and header field order come from `BleConstants.kt` and the Python reference in task T0.1; the D-1 defaults apply only where those files are silent.
+- [x] **D-1 (residual).** Resolved and frozen in `T0.1`: UUIDs, HKDF strings, packet types, and header layout are synchronized in `BleConstants.kt` and `scripts/wire_spec.py` and documented in `docs/WIRE_SPEC.md`.
 - [ ] **D-10 (residual).** Model strings of Devices B and C.
 
 ---

@@ -1,0 +1,1028 @@
+{
+  "version": "1.0",
+  "total_vectors": 34,
+  "positive_count": 22,
+  "negative_count": 12,
+  "vectors": [
+    {
+      "description": "P01: Empty text message",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000001",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "5bc29a5812cbae9b97b218be",
+        "tag_hex": "ecbe5c9cace59636d92ba563b19e8caf",
+        "ciphertext_len": 8,
+        "ciphertext_hex": "ecd2ec7a89df070a",
+        "signature_hex": "d0f24142ec168f4c4c7865b5e211d611ede598986e568efc0ca95e5bec1add919f9d11117e33dec50461ea04bb30543ccf44f1ab05cfdffdab160980c3aee07d",
+        "aad_hex": "01000000000000000100000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404001000,
+        "plaintext": "",
+        "inner_payload_len": 8
+      },
+      "frame_hex": "0107000000000000000100000001a7fdc9626f7aba8300015bc29a5812cbae9b97b218beecbe5c9cace59636d92ba563b19e8caf00000008ecd2ec7a89df070ad0f24142ec168f4c4c7865b5e211d611ede598986e568efc0ca95e5bec1add919f9d11117e33dec50461ea04bb30543ccf44f1ab05cfdffdab160980c3aee07d",
+      "frame_len": 128
+    },
+    {
+      "description": "P02: 1-byte ASCII text",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000002",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "da680b8987e69ba9c3d94c11",
+        "tag_hex": "fc5188dbb8fa41b72b0ad9fe93e8ddbf",
+        "ciphertext_len": 9,
+        "ciphertext_hex": "e00cd1f5886c11eb2b",
+        "signature_hex": "e7dc429529fc576691e4146eaa30c985bf4a79ded73720ee77dde71566d8f1370eb02a4d4e90522d6a12226da64021e14a6e2005029f173444e929d96e189e6d",
+        "aad_hex": "01000000000000000200000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404002000,
+        "plaintext": "A",
+        "inner_payload_len": 9
+      },
+      "frame_hex": "0107000000000000000200000001a7fdc9626f7aba830001da680b8987e69ba9c3d94c11fc5188dbb8fa41b72b0ad9fe93e8ddbf00000009e00cd1f5886c11eb2be7dc429529fc576691e4146eaa30c985bf4a79ded73720ee77dde71566d8f1370eb02a4d4e90522d6a12226da64021e14a6e2005029f173444e929d96e189e6d",
+      "frame_len": 129
+    },
+    {
+      "description": "P03: Short greeting",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000003",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "8a937ac0adb2d74f62f0263d",
+        "tag_hex": "b4cfd77eb02135e3b5db862a1f3adfdf",
+        "ciphertext_len": 20,
+        "ciphertext_hex": "7f3d59f8ff74a7890fba6c2e851bc00e5e8c9297",
+        "signature_hex": "d2a9c35b8b5ce1fbcc3360048aa542ea6dac743ac74d720b7cf299aa133ace281525e26815c2bc541929785d1e3213dfe6c5800ebe24b07e629f42d48dd6a477",
+        "aad_hex": "010000000000000003000000013a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404003000,
+        "plaintext": "Hello, mesh!",
+        "inner_payload_len": 20
+      },
+      "frame_hex": "01070000000000000003000000013a0139603c9b1bf300018a937ac0adb2d74f62f0263db4cfd77eb02135e3b5db862a1f3adfdf000000147f3d59f8ff74a7890fba6c2e851bc00e5e8c9297d2a9c35b8b5ce1fbcc3360048aa542ea6dac743ac74d720b7cf299aa133ace281525e26815c2bc541929785d1e3213dfe6c5800ebe24b07e629f42d48dd6a477",
+      "frame_len": 140
+    },
+    {
+      "description": "P04: UTF-8 with emojis and symbols",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 5,
+        "msg_id_hex": "0000000000000004",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "759ec0f16157de3dd85eade3",
+        "tag_hex": "e369984414c567df845dba290c13594e",
+        "ciphertext_len": 39,
+        "ciphertext_hex": "6141c5fe2e683d071b78e74c43e115fd8e03db8cbaebd79854a5841dd65f344c3abedce38be6b6",
+        "signature_hex": "59a7c4267d6548717d1059d6ef498ae2b05a878bf8ad8255690a6a6246a5aa5ff475528d7ecd3b89eb9cf86697801a70ebdc191100174a19029908545700b3b4",
+        "aad_hex": "010000000000000004000000013a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404004000,
+        "plaintext": "P2Chat \ud83d\udee1\ufe0f\u26a1 BLE Mesh \ud83d\udd10",
+        "inner_payload_len": 39
+      },
+      "frame_hex": "01050000000000000004000000013a0139603c9b1bf30001759ec0f16157de3dd85eade3e369984414c567df845dba290c13594e000000276141c5fe2e683d071b78e74c43e115fd8e03db8cbaebd79854a5841dd65f344c3abedce38be6b659a7c4267d6548717d1059d6ef498ae2b05a878bf8ad8255690a6a6246a5aa5ff475528d7ecd3b89eb9cf86697801a70ebdc191100174a19029908545700b3b4",
+      "frame_len": 159
+    },
+    {
+      "description": "P05: Multi-lingual UTF-8 string",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000005",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a588da41dd1f202e",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "045441bfa7f8b5f85cfdb2737a44142f772a837077746e909499b782f65d8de21d1e4bc0bb4e0fc1aa7ebbead170e4d131818b9e52b753e986715250379e2deb66",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "847655a8e16c94396b4296b5",
+        "tag_hex": "b11bfea6961d79b49aafc361e84fc118",
+        "ciphertext_len": 57,
+        "ciphertext_hex": "43bed358cf0214e8180b11de978482b1cd37c5f541499d5d3d8c042854a26066a2c6157cd7b03899a5f4998fad8e0bae90920791f0179ff614",
+        "signature_hex": "6d511cf049e82ad6d0dd95c9253e0e62bec14baff43791c4ef97671de29a988f1285bc5d2e8352d9f3e2ed0b9a58d4807bd3821ef60170ebd829386caa06a9d0",
+        "aad_hex": "01000000000000000500000001a588da41dd1f202e0001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404005000,
+        "plaintext": "Bonjour, \u4e16\u754c, \u0645\u0631\u062d\u0628\u0627\u064b, \u0928\u092e\u0938\u094d\u0924\u0947",
+        "inner_payload_len": 57
+      },
+      "frame_hex": "0107000000000000000500000001a588da41dd1f202e0001847655a8e16c94396b4296b5b11bfea6961d79b49aafc361e84fc1180000003943bed358cf0214e8180b11de978482b1cd37c5f541499d5d3d8c042854a26066a2c6157cd7b03899a5f4998fad8e0bae90920791f0179ff6146d511cf049e82ad6d0dd95c9253e0e62bec14baff43791c4ef97671de29a988f1285bc5d2e8352d9f3e2ed0b9a58d4807bd3821ef60170ebd829386caa06a9d0",
+      "frame_len": 177
+    },
+    {
+      "description": "P06: 100-byte plaintext text",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000006",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "0baf3132b81435203d9b2148",
+        "tag_hex": "236d6822f5f0b428d53f48376c2f26ff",
+        "ciphertext_len": 108,
+        "ciphertext_hex": "3f705529ebcb7abea102dca639cbcb5bb3aef32c388cdca9d757b0e91a93cf18b7bb1728c77c3c7d41e1354ad5ab848ee1ecbd72bf9efe8c5c8ad14f02b8c3117183f728c325daa1150fbaa85c8d508fc5151674bc2d9a878f89d576b3ded67b775454af6b8d391be26ae38a",
+        "signature_hex": "09eebd1d3a5c2cb148c1a9314867440ba132ae3e9f0de157fb8741ce81193f5908e5670d988d2bac3b17fec7589778b42a56a20225e65d1b39bb03fd9da97f5a",
+        "aad_hex": "01000000000000000600000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404006000,
+        "plaintext": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+        "inner_payload_len": 108
+      },
+      "frame_hex": "0107000000000000000600000001a7fdc9626f7aba8300010baf3132b81435203d9b2148236d6822f5f0b428d53f48376c2f26ff0000006c3f705529ebcb7abea102dca639cbcb5bb3aef32c388cdca9d757b0e91a93cf18b7bb1728c77c3c7d41e1354ad5ab848ee1ecbd72bf9efe8c5c8ad14f02b8c3117183f728c325daa1150fbaa85c8d508fc5151674bc2d9a878f89d576b3ded67b775454af6b8d391be26ae38a09eebd1d3a5c2cb148c1a9314867440ba132ae3e9f0de157fb8741ce81193f5908e5670d988d2bac3b17fec7589778b42a56a20225e65d1b39bb03fd9da97f5a",
+      "frame_len": 228
+    },
+    {
+      "description": "P07: 200-byte plaintext text",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000007",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "62051952655425da9b50c1d2",
+        "tag_hex": "769dc57cd844ae096e96ff34d3685d92",
+        "ciphertext_len": 208,
+        "ciphertext_hex": "8941fe6ae302dca666553c6cdcb7f70aefd2b5f389921f8326ad1e1df8cf5d8f9a7634218ad7ba85ea31a1fc1dfc085e5c826fc0301376293766a5a6e085601e1ca5f49c17183dd43e8aba4deabe7bab5f9153ab6eb059f94405c6f32cff202e73f15b4fe2367e19b5b85d6096c4b1b0fee2194212b57a9dad07f6faff9572848d409713b85d5001327868bc29ae5a23ce743ada27d51dd825481150d7a3b23d75a3d4549de386a7744f8eecefe8d08c43a0f3643fef6cd1b29b9bf73e87bd743e4fce98753b3df8926e815f9b9b8d76",
+        "signature_hex": "dbda9dc24e0ff4df4f9955e53559a644dd3471b90ca9ac64388d19f78cc3038b111f6f2f7f964809a2fb02e549394b4750092b32809cc5fcaa1a3b4a7c219970",
+        "aad_hex": "01000000000000000700000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404007000,
+        "plaintext": "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB",
+        "inner_payload_len": 208
+      },
+      "frame_hex": "0107000000000000000700000001a7fdc9626f7aba83000162051952655425da9b50c1d2769dc57cd844ae096e96ff34d3685d92000000d08941fe6ae302dca666553c6cdcb7f70aefd2b5f389921f8326ad1e1df8cf5d8f9a7634218ad7ba85ea31a1fc1dfc085e5c826fc0301376293766a5a6e085601e1ca5f49c17183dd43e8aba4deabe7bab5f9153ab6eb059f94405c6f32cff202e73f15b4fe2367e19b5b85d6096c4b1b0fee2194212b57a9dad07f6faff9572848d409713b85d5001327868bc29ae5a23ce743ada27d51dd825481150d7a3b23d75a3d4549de386a7744f8eecefe8d08c43a0f3643fef6cd1b29b9bf73e87bd743e4fce98753b3df8926e815f9b9b8d76dbda9dc24e0ff4df4f9955e53559a644dd3471b90ca9ac64388d19f78cc3038b111f6f2f7f964809a2fb02e549394b4750092b32809cc5fcaa1a3b4a7c219970",
+      "frame_len": 328
+    },
+    {
+      "description": "P08: 300-byte plaintext text",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000008",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "453a13e9da5e1f30ac6697b7",
+        "tag_hex": "d25419893efc18789f615cfe3172af04",
+        "ciphertext_len": 308,
+        "ciphertext_hex": "64a7a6e218eff663f28fea9585964382bc5af1554323a870c6e4349920bdc4cfd27509257a96275c047b649957ebc2c32d5cc30bcb09dfad4893bcb5ba1dbe479881d9c80fd8f6857b360d976b52497bde2a84039e3594652425fc43d0258521619ef9eb11d3431761e7b8b7ac3d4fa2f20572e0feef764ae1d7dd65dfeb95a7de551237cd10fa64414143d932d97678f58d9ce92674033e42129629056515586c70e776df6cd159eff37b3086736b8c90c343730143cbd6cf66dcb5cf1a941f26c84d43e39814a147c10fac383c755c584d231ddb8c9cb2796950b5b1af5d632cb5671cc20f19bbf84b03c380ecfac4c376b44dcd0b8d6e12f541f72d5a2ccca85975cec86e6212feeba04e1d87244ee0d53a586c876e07081204e895f7b08d37d0e96251661e728605f97a8f082ba79baee282",
+        "signature_hex": "75ecb3719ee2b05b4864c6e3293ddf7450cd43afce067d767fbce36c48c1940201e899c3cee83a46426af3768793152199428db9d8a7664c35c61c95e7d85835",
+        "aad_hex": "010000000000000008000000013a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404008000,
+        "plaintext": "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+        "inner_payload_len": 308
+      },
+      "frame_hex": "01070000000000000008000000013a0139603c9b1bf30001453a13e9da5e1f30ac6697b7d25419893efc18789f615cfe3172af040000013464a7a6e218eff663f28fea9585964382bc5af1554323a870c6e4349920bdc4cfd27509257a96275c047b649957ebc2c32d5cc30bcb09dfad4893bcb5ba1dbe479881d9c80fd8f6857b360d976b52497bde2a84039e3594652425fc43d0258521619ef9eb11d3431761e7b8b7ac3d4fa2f20572e0feef764ae1d7dd65dfeb95a7de551237cd10fa64414143d932d97678f58d9ce92674033e42129629056515586c70e776df6cd159eff37b3086736b8c90c343730143cbd6cf66dcb5cf1a941f26c84d43e39814a147c10fac383c755c584d231ddb8c9cb2796950b5b1af5d632cb5671cc20f19bbf84b03c380ecfac4c376b44dcd0b8d6e12f541f72d5a2ccca85975cec86e6212feeba04e1d87244ee0d53a586c876e07081204e895f7b08d37d0e96251661e728605f97a8f082ba79baee28275ecb3719ee2b05b4864c6e3293ddf7450cd43afce067d767fbce36c48c1940201e899c3cee83a46426af3768793152199428db9d8a7664c35c61c95e7d85835",
+      "frame_len": 428
+    },
+    {
+      "description": "P09: Maximum 350-byte ASCII text (CHAT frame = 478B)",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000009",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "82a067c2336e9a237c05c836",
+        "tag_hex": "2b08e52a51f5a9511149cb79cdf4d4f6",
+        "ciphertext_len": 358,
+        "ciphertext_hex": "ab47a70e5e83f1baf6f4d24a9b46573fec458c62ce765961c3379a3ac1cb61ee9bf5c19ed1d5b1465b5f590174accce2a96b420753f4ca39030c2855e328ba7952d2a6d96f13dbd4b9dd501dbb822bb8ea0040e6b2fa6d0a212e233ffa220a61a509327b7357371479a60fddbc3d181104a3cd2849b31a9342f053626aad32c553595297853301e6be6650f98674efcc382e8089d0fb4f381a14bbaad08a527e0b3c3d31b0b6fc9ef0b4cb3e3c0824b0180799320c89556a6cd9e199ea9273d47d5bd21f7f0227c311fc08a08388c074dcfcfa812b3b722cfd88483944c2512c61a70ea578bb0d9f578028e333f31faa8e4daaf3750c930f129b834019555b8ccfae4b4d809e5ebc84d1eb90214fe394b9a8902dfc0b9b47240f26279cd9605aca4c0faeff83be1fdfc5eeca75aa4150bd954592e8f89f14012bd96807dc38a2dd4df8b4d814ae50dda4a1e58a6f69df9fa4055d60ed7e1f2a38ed884bed99dbc0427de1ee19",
+        "signature_hex": "3af7f6cb65d485e77308adc61db60c3c3287f7f1efac97530abe7479c33ba1be3ad04aa5a3910bed2327063d0634104b18473b51c3620faf7d09e7d8526adf07",
+        "aad_hex": "010000000000000009000000013a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404009000,
+        "plaintext": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+        "inner_payload_len": 358
+      },
+      "frame_hex": "01070000000000000009000000013a0139603c9b1bf3000182a067c2336e9a237c05c8362b08e52a51f5a9511149cb79cdf4d4f600000166ab47a70e5e83f1baf6f4d24a9b46573fec458c62ce765961c3379a3ac1cb61ee9bf5c19ed1d5b1465b5f590174accce2a96b420753f4ca39030c2855e328ba7952d2a6d96f13dbd4b9dd501dbb822bb8ea0040e6b2fa6d0a212e233ffa220a61a509327b7357371479a60fddbc3d181104a3cd2849b31a9342f053626aad32c553595297853301e6be6650f98674efcc382e8089d0fb4f381a14bbaad08a527e0b3c3d31b0b6fc9ef0b4cb3e3c0824b0180799320c89556a6cd9e199ea9273d47d5bd21f7f0227c311fc08a08388c074dcfcfa812b3b722cfd88483944c2512c61a70ea578bb0d9f578028e333f31faa8e4daaf3750c930f129b834019555b8ccfae4b4d809e5ebc84d1eb90214fe394b9a8902dfc0b9b47240f26279cd9605aca4c0faeff83be1fdfc5eeca75aa4150bd954592e8f89f14012bd96807dc38a2dd4df8b4d814ae50dda4a1e58a6f69df9fa4055d60ed7e1f2a38ed884bed99dbc0427de1ee193af7f6cb65d485e77308adc61db60c3c3287f7f1efac97530abe7479c33ba1be3ad04aa5a3910bed2327063d0634104b18473b51c3620faf7d09e7d8526adf07",
+      "frame_len": 478
+    },
+    {
+      "description": "P10: Maximum 350-byte UTF-8 mixed bytes",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "000000000000000a",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a588da41dd1f202e",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "045441bfa7f8b5f85cfdb2737a44142f772a837077746e909499b782f65d8de21d1e4bc0bb4e0fc1aa7ebbead170e4d131818b9e52b753e986715250379e2deb66",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "a7ae442e0de920228c38e75f",
+        "tag_hex": "ac2340ade92f8233d6f9ad7a4aaa75ff",
+        "ciphertext_len": 358,
+        "ciphertext_hex": "8293fff75e9df51b1d3ba5b852f534c982840a70981e331cadc25ff192452ab6b8bc017ca0c6c7f52cc314bf8385f81f11a45759ba3780bf518af2732858f492df2626075c485d392efe42a35314c361fdba03100c71c6649134512504d8f2f7443936ddd023f34b1da8ac1319c8db239904c54dd77544fcb0887714dc4b77645b37041371e5e77cfcb750083168cb8c82ac133e123b2c7a5810a5526b3864e3e0a092d337975d179fba82a15560686aed1669e1daeaec1543d684f06187d98ba97543283c26673b102366bc6e7ca96638d64d9a80cf3175bf7a6c5f064c0447c805ab48bea637dd9b54cd96a863c9b62fc44286c7c662ff06279ffb4a028218ac62ee54ee65c20d3f4d845e7cd943fcab1679d58f7a142dd23716cb71aa3035d9df6665f4616f2ebc9a915389f6de0006abfa3595d975779a633845e5283661f6e1594dcc67ba5d7a01a2972d421a6952af8f324913e3e1323522b59d52d83810614b993080",
+        "signature_hex": "a92c3f0de354616f28ebff0be13dc4c57f9befaacb2944665d50a4fdbce2f59ea2d21e097dd323624653c8a05db04d9e16e524db1cfdeef91d431e570b4b07b9",
+        "aad_hex": "01000000000000000a00000001a588da41dd1f202e0001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404010000,
+        "plaintext": "\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25\ud83d\udd25XY",
+        "inner_payload_len": 358
+      },
+      "frame_hex": "0107000000000000000a00000001a588da41dd1f202e0001a7ae442e0de920228c38e75fac2340ade92f8233d6f9ad7a4aaa75ff000001668293fff75e9df51b1d3ba5b852f534c982840a70981e331cadc25ff192452ab6b8bc017ca0c6c7f52cc314bf8385f81f11a45759ba3780bf518af2732858f492df2626075c485d392efe42a35314c361fdba03100c71c6649134512504d8f2f7443936ddd023f34b1da8ac1319c8db239904c54dd77544fcb0887714dc4b77645b37041371e5e77cfcb750083168cb8c82ac133e123b2c7a5810a5526b3864e3e0a092d337975d179fba82a15560686aed1669e1daeaec1543d684f06187d98ba97543283c26673b102366bc6e7ca96638d64d9a80cf3175bf7a6c5f064c0447c805ab48bea637dd9b54cd96a863c9b62fc44286c7c662ff06279ffb4a028218ac62ee54ee65c20d3f4d845e7cd943fcab1679d58f7a142dd23716cb71aa3035d9df6665f4616f2ebc9a915389f6de0006abfa3595d975779a633845e5283661f6e1594dcc67ba5d7a01a2972d421a6952af8f324913e3e1323522b59d52d83810614b993080a92c3f0de354616f28ebff0be13dc4c57f9befaacb2944665d50a4fdbce2f59ea2d21e097dd323624653c8a05db04d9e16e524db1cfdeef91d431e570b4b07b9",
+      "frame_len": 478
+    },
+    {
+      "description": "P11: Control packet KEY_ROTATE epoch 2",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 2,
+        "ttl": 7,
+        "msg_id_hex": "000000000000000b",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 2
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "9c2a9de8d7db3927d2738a10",
+        "tag_hex": "c3cf7b5e62ec935038610caf50ad704e",
+        "ciphertext_len": 26,
+        "ciphertext_hex": "a3f362637e28d9279d8116465c30880390453a417622cb897b8e",
+        "signature_hex": "390a1744ee3556043f8fb27a697ed2f8d802446c9d1e01460f374be6a9a9c12295e1ce216511d7273cdaa5697500ce365ec459ed56d580b718f5ba9c74d8cc86",
+        "aad_hex": "02000000000000000b00000001a7fdc9626f7aba830002"
+      },
+      "payload": {
+        "sent_at_ms": 1792404011000,
+        "plaintext": "KEY_ROTATE_BLOB_V2",
+        "inner_payload_len": 26
+      },
+      "frame_hex": "0207000000000000000b00000001a7fdc9626f7aba8300029c2a9de8d7db3927d2738a10c3cf7b5e62ec935038610caf50ad704e0000001aa3f362637e28d9279d8116465c30880390453a417622cb897b8e390a1744ee3556043f8fb27a697ed2f8d802446c9d1e01460f374be6a9a9c12295e1ce216511d7273cdaa5697500ce365ec459ed56d580b718f5ba9c74d8cc86",
+      "frame_len": 146
+    },
+    {
+      "description": "P12: Control packet ROSTER_SYNC",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 3,
+        "ttl": 7,
+        "msg_id_hex": "000000000000000c",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "88cede8c8afaa54aad10998e",
+        "tag_hex": "aa4a46ca867488f502d240dd66e04f34",
+        "ciphertext_len": 26,
+        "ciphertext_hex": "c48d6272bf1547d3b91f17f726d12c29b03e458f05286a8b3960",
+        "signature_hex": "c2c76db685ce7ef2537d2852d4d29e0c73ab82dae3aa285c3c54fd9f62925abb0236c4e685f549c2ce4a505598bbd513b2d2377fef508f467f35d57753a0f487",
+        "aad_hex": "03000000000000000c00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404012000,
+        "plaintext": "ROSTER_V1_HASH_XYZ",
+        "inner_payload_len": 26
+      },
+      "frame_hex": "0307000000000000000c00000001a7fdc9626f7aba83000188cede8c8afaa54aad10998eaa4a46ca867488f502d240dd66e04f340000001ac48d6272bf1547d3b91f17f726d12c29b03e458f05286a8b3960c2c76db685ce7ef2537d2852d4d29e0c73ab82dae3aa285c3c54fd9f62925abb0236c4e685f549c2ce4a505598bbd513b2d2377fef508f467f35d57753a0f487",
+      "frame_len": 146
+    },
+    {
+      "description": "P13: Control packet PAIRWISE_INVITE",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 4,
+        "ttl": 3,
+        "msg_id_hex": "000000000000000d",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "5574031d1eacfec381aa2faf",
+        "tag_hex": "4207e968acba5da19d663f49064b9a08",
+        "ciphertext_len": 27,
+        "ciphertext_hex": "69f2ecc71ebeb441d333eaa245e2a160a5fcfad165265ada1492e9",
+        "signature_hex": "aa26902070d0df1edba5cda9f06c5b744500b5885c13375ee84ccd3926b81d9263387ace93d673bc8cf2f1179ab7969cbe752f2b3ad69f9de2342178d8f42bd1",
+        "aad_hex": "04000000000000000d00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404013000,
+        "plaintext": "INVITE_DATA_PAYLOAD",
+        "inner_payload_len": 27
+      },
+      "frame_hex": "0403000000000000000d00000001a7fdc9626f7aba8300015574031d1eacfec381aa2faf4207e968acba5da19d663f49064b9a080000001b69f2ecc71ebeb441d333eaa245e2a160a5fcfad165265ada1492e9aa26902070d0df1edba5cda9f06c5b744500b5885c13375ee84ccd3926b81d9263387ace93d673bc8cf2f1179ab7969cbe752f2b3ad69f9de2342178d8f42bd1",
+      "frame_len": 147
+    },
+    {
+      "description": "P14: Diagnostic BENCH_DATA probe",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 5,
+        "ttl": 7,
+        "msg_id_hex": "000000000000000e",
+        "group_id_hex": "42454e43",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "4e183d1ea07320e178dfb98d",
+        "tag_hex": "f7c5af65caa543778bbea5868cc06abd",
+        "ciphertext_len": 21,
+        "ciphertext_hex": "a07bec1f842ae49aeeaae86017a9474fec76f6b152",
+        "signature_hex": "c2494f0a6ff34da33d1884acbc30a0c08e673ecde34926a10211eec7ac786a63c1be8ac2e30b8429a9b4926396cc0f87a54bb38dc56d8507712905f499ef3844",
+        "aad_hex": "05000000000000000e42454e433a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404014000,
+        "plaintext": "PING_SEQ_0001",
+        "inner_payload_len": 21
+      },
+      "frame_hex": "0507000000000000000e42454e433a0139603c9b1bf300014e183d1ea07320e178dfb98df7c5af65caa543778bbea5868cc06abd00000015a07bec1f842ae49aeeaae86017a9474fec76f6b152c2494f0a6ff34da33d1884acbc30a0c08e673ecde34926a10211eec7ac786a63c1be8ac2e30b8429a9b4926396cc0f87a54bb38dc56d8507712905f499ef3844",
+      "frame_len": 141
+    },
+    {
+      "description": "P15: Diagnostic BENCH_ACK echo",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 6,
+        "ttl": 7,
+        "msg_id_hex": "000000000000000f",
+        "group_id_hex": "42454e43",
+        "sender_fp_hex": "a588da41dd1f202e",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "045441bfa7f8b5f85cfdb2737a44142f772a837077746e909499b782f65d8de21d1e4bc0bb4e0fc1aa7ebbead170e4d131818b9e52b753e986715250379e2deb66",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "0343e4b77066a2d9025f4043",
+        "tag_hex": "356c03999397f741dd21e8157e0c7fe6",
+        "ciphertext_len": 21,
+        "ciphertext_hex": "2755e03a33797eae3414342af9547292dc6133ae81",
+        "signature_hex": "c88117fc455f42bc878fd2546cd7d7a9b20b20fc3b449052fe17322aa653664d98146dd66952c6ef294372265e7035d8aa7c41761733b121e4221f85f71afd0b",
+        "aad_hex": "06000000000000000f42454e43a588da41dd1f202e0001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404015000,
+        "plaintext": "PONG_SEQ_0001",
+        "inner_payload_len": 21
+      },
+      "frame_hex": "0607000000000000000f42454e43a588da41dd1f202e00010343e4b77066a2d9025f4043356c03999397f741dd21e8157e0c7fe6000000152755e03a33797eae3414342af9547292dc6133ae81c88117fc455f42bc878fd2546cd7d7a9b20b20fc3b449052fe17322aa653664d98146dd66952c6ef294372265e7035d8aa7c41761733b121e4221f85f71afd0b",
+      "frame_len": 141
+    },
+    {
+      "description": "P16: TTL minimum 1 hop",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 1,
+        "msg_id_hex": "0000000000000010",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "7f17a412dfd56d232bac4e21",
+        "tag_hex": "4f4c63f9f078cf985b2b05b3502de269",
+        "ciphertext_len": 28,
+        "ciphertext_hex": "2e83e56a9744b4a0551bd880fcfe890af93d29eb5bc0db927e5f8471",
+        "signature_hex": "257a22e35bfdd4b8cdce003395b7e452b948577302ae933bb98c32c57bb10a4bc2dea64bb048cfafeb06340505dc1fe1ecae32ae3265eda3efaf15c4cf0ba19e",
+        "aad_hex": "010000000000000010000000013a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404016000,
+        "plaintext": "Direct neighbor only",
+        "inner_payload_len": 28
+      },
+      "frame_hex": "01010000000000000010000000013a0139603c9b1bf300017f17a412dfd56d232bac4e214f4c63f9f078cf985b2b05b3502de2690000001c2e83e56a9744b4a0551bd880fcfe890af93d29eb5bc0db927e5f8471257a22e35bfdd4b8cdce003395b7e452b948577302ae933bb98c32c57bb10a4bc2dea64bb048cfafeb06340505dc1fe1ecae32ae3265eda3efaf15c4cf0ba19e",
+      "frame_len": 148
+    },
+    {
+      "description": "P17: TTL maximum 15 hops",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 15,
+        "msg_id_hex": "0000000000000011",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a588da41dd1f202e",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "045441bfa7f8b5f85cfdb2737a44142f772a837077746e909499b782f65d8de21d1e4bc0bb4e0fc1aa7ebbead170e4d131818b9e52b753e986715250379e2deb66",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "d7cca6e41bf7a3edd2ea2e0f",
+        "tag_hex": "28c86c3311dfcbd11380912b3c8a346f",
+        "ciphertext_len": 27,
+        "ciphertext_hex": "e0cba778a45660d8db26dcc814c24a8f6eb2c2e0e881aaee77cf30",
+        "signature_hex": "a064521641227a77e26d68d40d9c0e4cd74e26f4d09e4617c504582d4b924c6c84c6ffc83d55054fea27690eba41ee003848d8052d9744c67a469c6838e8ab2f",
+        "aad_hex": "01000000000000001100000001a588da41dd1f202e0001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404017000,
+        "plaintext": "Deep epidemic flood",
+        "inner_payload_len": 27
+      },
+      "frame_hex": "010f000000000000001100000001a588da41dd1f202e0001d7cca6e41bf7a3edd2ea2e0f28c86c3311dfcbd11380912b3c8a346f0000001be0cba778a45660d8db26dcc814c24a8f6eb2c2e0e881aaee77cf30a064521641227a77e26d68d40d9c0e4cd74e26f4d09e4617c504582d4b924c6c84c6ffc83d55054fea27690eba41ee003848d8052d9744c67a469c6838e8ab2f",
+      "frame_len": 147
+    },
+    {
+      "description": "P18: Epoch rollover epoch 10",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000012",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 10
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "df18d964fdfaed41fe803fd0",
+        "tag_hex": "fa884f3ebff3ee3afbb3f364c239e2f2",
+        "ciphertext_len": 24,
+        "ciphertext_hex": "55162dcbeaecea42eeab5497f9e03a360be356707b446b14",
+        "signature_hex": "eb1c4fd3940f4a245ae3e701af4951ac183b1584eb497b7ecbe8633432061848594472d2d6f77209a8d14cd159b1532687c447d6bb6408edd0e2dac85ceb2f2b",
+        "aad_hex": "01000000000000001200000001a7fdc9626f7aba83000a"
+      },
+      "payload": {
+        "sent_at_ms": 1792404018000,
+        "plaintext": "Epoch 10 message",
+        "inner_payload_len": 24
+      },
+      "frame_hex": "0107000000000000001200000001a7fdc9626f7aba83000adf18d964fdfaed41fe803fd0fa884f3ebff3ee3afbb3f364c239e2f20000001855162dcbeaecea42eeab5497f9e03a360be356707b446b14eb1c4fd3940f4a245ae3e701af4951ac183b1584eb497b7ecbe8633432061848594472d2d6f77209a8d14cd159b1532687c447d6bb6408edd0e2dac85ceb2f2b",
+      "frame_len": 144
+    },
+    {
+      "description": "P19: High group ID",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "0000000000000013",
+        "group_id_hex": "fffffffe",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "972d631736c96cd754ffc53b",
+        "tag_hex": "2edce4b720ee7b2b6f8e3b488cd0d09e",
+        "ciphertext_len": 29,
+        "ciphertext_hex": "bcaa1809cdb6e90835bf47f3fcd2b658b576a1ad8ee1a1abe40e1553f6",
+        "signature_hex": "48227f7f402e04ecbe194218a060f746e9fbbd8500b1a8bc392818d813861bdefd6316f6c1004aaeafdacfd19f54b583719730bb1351da3d7b7c87a4a4f22715",
+        "aad_hex": "010000000000000013fffffffe3a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404019000,
+        "plaintext": "High group identifier",
+        "inner_payload_len": 29
+      },
+      "frame_hex": "01070000000000000013fffffffe3a0139603c9b1bf30001972d631736c96cd754ffc53b2edce4b720ee7b2b6f8e3b488cd0d09e0000001dbcaa1809cdb6e90835bf47f3fcd2b658b576a1ad8ee1a1abe40e1553f648227f7f402e04ecbe194218a060f746e9fbbd8500b1a8bc392818d813861bdefd6316f6c1004aaeafdacfd19f54b583719730bb1351da3d7b7c87a4a4f22715",
+      "frame_len": 149
+    },
+    {
+      "description": "P20: Max 64-bit msg_id",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "ffffffffffffffff",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a588da41dd1f202e",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "045441bfa7f8b5f85cfdb2737a44142f772a837077746e909499b782f65d8de21d1e4bc0bb4e0fc1aa7ebbead170e4d131818b9e52b753e986715250379e2deb66",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "10bec8ab69952081eae417e7",
+        "tag_hex": "7eeaa8f59848fbfbd91f653dcb148267",
+        "ciphertext_len": 25,
+        "ciphertext_hex": "15f15e6675ff88461d896c44622d0771e8797b5648c0d9e02c",
+        "signature_hex": "1b3a40b2a5f76297fde79aae62a9caca400d12bc95c80007e92fc066779dad5fe1c240bcfde01506f2ba8890a49f920a94318f1147d64d314015987fcfa23f88",
+        "aad_hex": "01ffffffffffffffff00000001a588da41dd1f202e0001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404020000,
+        "plaintext": "Max uint64 msg_id",
+        "inner_payload_len": 25
+      },
+      "frame_hex": "0107ffffffffffffffff00000001a588da41dd1f202e000110bec8ab69952081eae417e77eeaa8f59848fbfbd91f653dcb1482670000001915f15e6675ff88461d896c44622d0771e8797b5648c0d9e02c1b3a40b2a5f76297fde79aae62a9caca400d12bc95c80007e92fc066779dad5fe1c240bcfde01506f2ba8890a49f920a94318f1147d64d314015987fcfa23f88",
+      "frame_len": 145
+    },
+    {
+      "description": "P21: Standard conversation message",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "123456789abcdef0",
+        "group_id_hex": "0000002a",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "b0efaa48355889ac48769b3c",
+        "tag_hex": "782a134bde7dd7dc1fd445c410782059",
+        "ciphertext_len": 40,
+        "ciphertext_hex": "f92a910a2206b4ee2680a0d115bb433556748e7d8a79095943da1a552e7a9ae6a5a41d95e8a0c974",
+        "signature_hex": "a41c46087360a0bf71df3fe35966cbe2cdd9e7a736b45f8fa439046611dc8442483a998660731b378603e82480ba528ebebb9512202e79ede4be69690b99d7c2",
+        "aad_hex": "01123456789abcdef00000002aa7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404021000,
+        "plaintext": "Meet at North Gate in 10 minutes",
+        "inner_payload_len": 40
+      },
+      "frame_hex": "0107123456789abcdef00000002aa7fdc9626f7aba830001b0efaa48355889ac48769b3c782a134bde7dd7dc1fd445c41078205900000028f92a910a2206b4ee2680a0d115bb433556748e7d8a79095943da1a552e7a9ae6a5a41d95e8a0c974a41c46087360a0bf71df3fe35966cbe2cdd9e7a736b45f8fa439046611dc8442483a998660731b378603e82480ba528ebebb9512202e79ede4be69690b99d7c2",
+      "frame_len": 160
+    },
+    {
+      "description": "P22: Tactical situation report",
+      "expected_verdict": "ACCEPT",
+      "tamper_mode": "none",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "23456789abcdef01",
+        "group_id_hex": "0000002a",
+        "sender_fp_hex": "3a0139603c9b1bf3",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04557b119063cf7ca9f131b4c4e36917e9b2c53f9799a2007e7bfec044be1ed54104197a1dc8a7f1430b8778c2904d448c7654b9dbb19d7190e49fe271537ca49e",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "fd73a376517c0e9822a6d75e",
+        "tag_hex": "d0a287fdb7c8fc98a6fd8859874808ad",
+        "ciphertext_len": 47,
+        "ciphertext_hex": "fe620f771c1622f76c1a065f629a2de7ee57edeca74eba7ecb7dc1a26bcbc280fac284857c306a4dce9e56e417000f",
+        "signature_hex": "0fdeab418a0df9879eb7647fc8582bad8c9c7dc50f0a3470e7bf319377d120aaa19a61ea17d64afb54e9b9077899172717f6fe2e7869951b0348c6bdc9c367f7",
+        "aad_hex": "0123456789abcdef010000002a3a0139603c9b1bf30001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404022000,
+        "plaintext": "Route is clear. Signal strength strong.",
+        "inner_payload_len": 47
+      },
+      "frame_hex": "010723456789abcdef010000002a3a0139603c9b1bf30001fd73a376517c0e9822a6d75ed0a287fdb7c8fc98a6fd8859874808ad0000002ffe620f771c1622f76c1a065f629a2de7ee57edeca74eba7ecb7dc1a26bcbc280fac284857c306a4dce9e56e417000f0fdeab418a0df9879eb7647fc8582bad8c9c7dc50f0a3470e7bf319377d120aaa19a61ea17d64afb54e9b9077899172717f6fe2e7869951b0348c6bdc9c367f7",
+      "frame_len": 167
+    },
+    {
+      "description": "N01: Tampered ciphertext bit",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_ciphertext",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "9000000000000017",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "ae04f07cbd4b24e1c4f60d8c",
+        "tag_hex": "d0cce6a8639b63a0052df0b545c3e70d",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "ef0b9f1f27be5f6e03b4e4c58f8435ab983abbc9f46ac4a85a271d256e7d",
+        "signature_hex": "589c67695032eaa1c69aff0c88e1650b3680a3323eae2213cff349e053fc6d9043028f242379f76c0edc6e72927231b0b13fb4336a4f25f0514157abe7e3fa1d",
+        "aad_hex": "01900000000000001700000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404023000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000001700000001a7fdc9626f7aba830001ae04f07cbd4b24e1c4f60d8cd0cce6a8639b63a0052df0b545c3e70d0000001eee0b9f1f27be5f6e03b4e4c58f8435ab983abbc9f46ac4a85a271d256e7d589c67695032eaa1c69aff0c88e1650b3680a3323eae2213cff349e053fc6d9043028f242379f76c0edc6e72927231b0b13fb4336a4f25f0514157abe7e3fa1d",
+      "frame_len": 150
+    },
+    {
+      "description": "N02: Tampered GCM tag bit",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_tag",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "9000000000000018",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "07f71caaaaa1e8d8ddb9cbba",
+        "tag_hex": "e07313752912c20903816d8f26811117",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "0cba85caa3daa052d3059767e83251ea8981721669522f25e21e7bab3a88",
+        "signature_hex": "503c1b28686b422bb732b947dfcdef6f2a9b591f759ab4232ca9288f32f1dd725e7074b5d855d44e5017e2a2a04fdb8968748b5d5389f4e60b58fc91ad496d25",
+        "aad_hex": "01900000000000001800000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404024000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000001800000001a7fdc9626f7aba83000107f71caaaaa1e8d8ddb9cbbae17313752912c20903816d8f268111170000001e0cba85caa3daa052d3059767e83251ea8981721669522f25e21e7bab3a88503c1b28686b422bb732b947dfcdef6f2a9b591f759ab4232ca9288f32f1dd725e7074b5d855d44e5017e2a2a04fdb8968748b5d5389f4e60b58fc91ad496d25",
+      "frame_len": 150
+    },
+    {
+      "description": "N03: Tampered GCM nonce bit",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_nonce",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "9000000000000019",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "18617623d4a7d3046b3513a2",
+        "tag_hex": "2c001aed89751612deea27b7c011193a",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "bd2198716e6dea820d0e7d727c306027f8a5b1168eaf24e3005cca9de010",
+        "signature_hex": "9f01a1224b50f79bfc1a8143160c9241db0abde5f460de7b8dc385a5d76c2996f4e7f184cc410967eed1b6b9d6dea25c3be18a5a1de0fd24d3246b21a470034f",
+        "aad_hex": "01900000000000001900000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404025000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000001900000001a7fdc9626f7aba83000119617623d4a7d3046b3513a22c001aed89751612deea27b7c011193a0000001ebd2198716e6dea820d0e7d727c306027f8a5b1168eaf24e3005cca9de0109f01a1224b50f79bfc1a8143160c9241db0abde5f460de7b8dc385a5d76c2996f4e7f184cc410967eed1b6b9d6dea25c3be18a5a1de0fd24d3246b21a470034f",
+      "frame_len": 150
+    },
+    {
+      "description": "N04: Tampered signature byte",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_signature",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "900000000000001a",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "574619b982ac80b3173495c0",
+        "tag_hex": "b53d875df9687adc27094bff3a7889a9",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "b01df6ddd16c7227ff93161300bfd42f69640ca946d694ee61ab2d527d76",
+        "signature_hex": "5699bf1532486bd865902854b58dbe3715fce73e8576aed1615649a522e8486b5d8f53a7a35d537a7b3c674015916b29e2615941305b5b98a3b71279d367e63e",
+        "aad_hex": "01900000000000001a00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404026000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000001a00000001a7fdc9626f7aba830001574619b982ac80b3173495c0b53d875df9687adc27094bff3a7889a90000001eb01df6ddd16c7227ff93161300bfd42f69640ca946d694ee61ab2d527d765699bf1532486bd865902854b58dbe3715fce73e8576aed1615649a522e8486b5d8f53a7a35d537a7b3c674015916b29e2615941305b5b98a3b71279d367e63f",
+      "frame_len": 150
+    },
+    {
+      "description": "N05: Tampered msg_id in header",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_header_msg_id",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "900000000000001b",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "8a1b3fc796200fb0bc5d13ba",
+        "tag_hex": "10974a714dc87ec265166477335fd8d7",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "34f4ba29ecc170c7ef4173d18ae29f8280b58b53bc0bcb503518c508a468",
+        "signature_hex": "e06fce807dd420580f862c205a563a1c02a1b848adab3c2855a649832c7e1f1d0a5a65dd81e7029dedfaaa4aa5abc9778b895e4664a922e994aeede90d74d030",
+        "aad_hex": "01900000000000001b00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404027000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107910000000000001b00000001a7fdc9626f7aba8300018a1b3fc796200fb0bc5d13ba10974a714dc87ec265166477335fd8d70000001e34f4ba29ecc170c7ef4173d18ae29f8280b58b53bc0bcb503518c508a468e06fce807dd420580f862c205a563a1c02a1b848adab3c2855a649832c7e1f1d0a5a65dd81e7029dedfaaa4aa5abc9778b895e4664a922e994aeede90d74d030",
+      "frame_len": 150
+    },
+    {
+      "description": "N06: Tampered sender_fp in header",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_header_sender_fp",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "900000000000001c",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "7dcb7bf28165bb394fa9b16c",
+        "tag_hex": "da1966339a87f15365c8478382216636",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "b239a0b31f475b6b844df027ef3c9f02633986cf8a36f27eb17b6e93d1f2",
+        "signature_hex": "13d85b3b2a62cd65f93a19910d748d0a5dd51e1b88f4efdd60028ba6b42fa8b0c017de140f49166b324fb512050cd051903227e0339ea88ca6680eb0b73254f3",
+        "aad_hex": "01900000000000001c00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404028000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000001c00000001a6fdc9626f7aba8300017dcb7bf28165bb394fa9b16cda1966339a87f15365c84783822166360000001eb239a0b31f475b6b844df027ef3c9f02633986cf8a36f27eb17b6e93d1f213d85b3b2a62cd65f93a19910d748d0a5dd51e1b88f4efdd60028ba6b42fa8b0c017de140f49166b324fb512050cd051903227e0339ea88ca6680eb0b73254f3",
+      "frame_len": 150
+    },
+    {
+      "description": "N07: Tampered key_epoch in header",
+      "expected_verdict": "DROP_BAD_SIGNATURE",
+      "tamper_mode": "tamper_header_key_epoch",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "900000000000001d",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "3244f5d7f659cc448f7e93ac",
+        "tag_hex": "1271305e13f0c82ab0cf32528b9a4c0f",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "314cb7dea759617d80de40d74126375000bae3a2b0cdeab0726cfb579cc7",
+        "signature_hex": "ce1caa1664c65dc0c1b4bee6f78a8af98da66915099a0e72227700af6f1d0cbce0b60be28ac4ad0e1ab6a412fff8bf7db58b33c4ddd31298ee3aae7e14be21fc",
+        "aad_hex": "01900000000000001d00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404029000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000001d00000001a7fdc9626f7aba8300003244f5d7f659cc448f7e93ac1271305e13f0c82ab0cf32528b9a4c0f0000001e314cb7dea759617d80de40d74126375000bae3a2b0cdeab0726cfb579cc7ce1caa1664c65dc0c1b4bee6f78a8af98da66915099a0e72227700af6f1d0cbce0b60be28ac4ad0e1ab6a412fff8bf7db58b33c4ddd31298ee3aae7e14be21fc",
+      "frame_len": 150
+    },
+    {
+      "description": "N08: TTL of 0 received",
+      "expected_verdict": "DROP_TTL",
+      "tamper_mode": "ttl_zero",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "900000000000001e",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "667fab79bf45604060b1352e",
+        "tag_hex": "5931cbb72c9327b3c76a087492554354",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "b67ac6866ddc6ff7ea8e5735a52a43e6ad07ff33c7a6bf9f128c62568b36",
+        "signature_hex": "779b86ff57217bdb699002b2de6aaf6f1a043d70b89fbdada61b8419e241bd6d588aeef053072e7ba6f2777df908570b159949348dada1d5cd067faffb1e03b4",
+        "aad_hex": "01900000000000001e00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404030000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0100900000000000001e00000001a7fdc9626f7aba830001667fab79bf45604060b1352e5931cbb72c9327b3c76a0874925543540000001eb67ac6866ddc6ff7ea8e5735a52a43e6ad07ff33c7a6bf9f128c62568b36779b86ff57217bdb699002b2de6aaf6f1a043d70b89fbdada61b8419e241bd6d588aeef053072e7ba6f2777df908570b159949348dada1d5cd067faffb1e03b4",
+      "frame_len": 150
+    },
+    {
+      "description": "N09: TTL above 15 (ttl=16)",
+      "expected_verdict": "DROP_TTL",
+      "tamper_mode": "ttl_exceeded",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "900000000000001f",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "7662618ff2476de00e077fb1",
+        "tag_hex": "a1099cc84542d6073f62ce10935cb34d",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "c1cd477c579cce6d349625b9141a0ea9a2a29da4ea57538a23a34f81d4db",
+        "signature_hex": "3173644a43e396b3eab7eff0ec1a7c11f4565d029e1851dacf63d817d4cbf9cd80c101223a479c506a83a72e14b40277118e39cc6af224d73e8b654b42683b58",
+        "aad_hex": "01900000000000001f00000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404031000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0110900000000000001f00000001a7fdc9626f7aba8300017662618ff2476de00e077fb1a1099cc84542d6073f62ce10935cb34d0000001ec1cd477c579cce6d349625b9141a0ea9a2a29da4ea57538a23a34f81d4db3173644a43e396b3eab7eff0ec1a7c11f4565d029e1851dacf63d817d4cbf9cd80c101223a479c506a83a72e14b40277118e39cc6af224d73e8b654b42683b58",
+      "frame_len": 150
+    },
+    {
+      "description": "N10: Unknown packet type 0x99",
+      "expected_verdict": "DROP_MALFORMED",
+      "tamper_mode": "unknown_packet_type",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "9000000000000020",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "924f24938fa190ce7add0b41",
+        "tag_hex": "c38301caed1480f84de5cd21fe221f10",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "624e2f02ff523676bf32f2a37987e3bfb00175e1ccf7329714e90cdbf45e",
+        "signature_hex": "aeb0ac1cbf1ede76bd68c54809a8c6638ce6f4ba68cee691e2ac2c25fbd84a8d596565787ad031b41b1d696eefd21f727ff21d50334f7cda02e3452f1c5fad30",
+        "aad_hex": "01900000000000002000000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404032000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "9907900000000000002000000001a7fdc9626f7aba830001924f24938fa190ce7add0b41c38301caed1480f84de5cd21fe221f100000001e624e2f02ff523676bf32f2a37987e3bfb00175e1ccf7329714e90cdbf45eaeb0ac1cbf1ede76bd68c54809a8c6638ce6f4ba68cee691e2ac2c25fbd84a8d596565787ad031b41b1d696eefd21f727ff21d50334f7cda02e3452f1c5fad30",
+      "frame_len": 150
+    },
+    {
+      "description": "N11: Truncated frame (100 bytes)",
+      "expected_verdict": "DROP_MALFORMED",
+      "tamper_mode": "truncated_frame",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "9000000000000021",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "1d8368065c160c6947da1c1d",
+        "tag_hex": "e6f80763f84e58ed0d8e322aac7db622",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "aa8bb844fcb7d9a6dbfc8baa54e1528de2181619e74e6ed8f08521fa23b9",
+        "signature_hex": "16615e5c48d85ff51b7fbc67f95a4ab4641c3d918887747e8eb35bbf6523d8c14ee48c128436295350877c65fbf5b7a38b0bec51388954437a73a72104f71878",
+        "aad_hex": "01900000000000002100000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404033000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000002100000001a7fdc9626f7aba8300011d8368065c160c6947da1c1de6f80763f84e58ed0d8e322aac7db6220000001eaa8bb844fcb7d9a6dbfc8baa54e1528de2181619e74e6ed8f08521fa23b916615e5c48d85ff51b7fbc67f95a",
+      "frame_len": 100
+    },
+    {
+      "description": "N12: Ciphertext length overrun",
+      "expected_verdict": "DROP_MALFORMED",
+      "tamper_mode": "len_overrun",
+      "header": {
+        "packet_type": 1,
+        "ttl": 7,
+        "msg_id_hex": "9000000000000022",
+        "group_id_hex": "00000001",
+        "sender_fp_hex": "a7fdc9626f7aba83",
+        "key_epoch": 1
+      },
+      "crypto": {
+        "signing_pubkey_uncompressed_hex": "04d8cd12ea5c67f2f8a00c1124893edcfa6754c4d6cede6be13bdf2295c810a97fa5a89d2d2a360c0ca9a4d6c7c9ed4b28d3e199d6627f2e696d689c310a5b0f48",
+        "group_key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "nonce_hex": "30248d8247d08bd125b20c4d",
+        "tag_hex": "0f6997c54034c21ae5c5f70430f762e4",
+        "ciphertext_len": 30,
+        "ciphertext_hex": "318fcb3198142dde4ed3cc1cb023b5174b38a51bdc27b19bdf83208d1bbb",
+        "signature_hex": "6c62376f1eedf4fe13f2096f1b29d9d9c4899b2b1447a852df1bfa87b2c8fae8de16ec1a29a27b62b156a9e44a8d5c37bc5290baa6ca858b109b55fbd7b35192",
+        "aad_hex": "01900000000000002200000001a7fdc9626f7aba830001"
+      },
+      "payload": {
+        "sent_at_ms": 1792404034000,
+        "plaintext": "Negative test baseline",
+        "inner_payload_len": 30
+      },
+      "frame_hex": "0107900000000000002200000001a7fdc9626f7aba83000130248d8247d08bd125b20c4d0f6997c54034c21ae5c5f70430f762e47fffffff318fcb3198142dde4ed3cc1cb023b5174b38a51bdc27b19bdf83208d1bbb6c62376f1eedf4fe13f2096f1b29d9d9c4899b2b1447a852df1bfa87b2c8fae8de16ec1a29a27b62b156a9e44a8d5c37bc5290baa6ca858b109b55fbd7b35192",
+      "frame_len": 150
+    }
+  ]
+}

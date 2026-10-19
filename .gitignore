@@ -1,0 +1,21 @@
+# Android & Gradle
+*.iml
+.gradle/
+build/
+app/build/
+local.properties
+.idea/
+.kotlin/
+
+# Python & UV
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Dataset & Offline Moderation Data (Decision 23)
+*.csv
+scripts/data/*.csv
+/data/

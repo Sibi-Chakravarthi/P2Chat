@@ -1,0 +1,347 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "58a4581a12c2c883656833b92a8f2718",
+    "entities": [
+      {
+        "tableName": "seen_messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `first_seen_ms` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenMs",
+            "columnName": "first_seen_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "packet_buffer",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `group_id` INTEGER NOT NULL, `packet_type` INTEGER NOT NULL, `frame` BLOB NOT NULL, `received_ttl` INTEGER NOT NULL, `stored_at_ms` INTEGER NOT NULL, `expires_at_ms` INTEGER NOT NULL, `priority` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packetType",
+            "columnName": "packet_type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frame",
+            "columnName": "frame",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedTtl",
+            "columnName": "received_ttl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storedAtMs",
+            "columnName": "stored_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtMs",
+            "columnName": "expires_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "local_identity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sender_fp` INTEGER NOT NULL, `alias` TEXT NOT NULL, `signing_pub` BLOB NOT NULL, `ecdh_pub` BLOB NOT NULL, `wrapped_signing_priv` BLOB NOT NULL, `wrapped_ecdh_priv` BLOB NOT NULL, PRIMARY KEY(`sender_fp`))",
+        "fields": [
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPub",
+            "columnName": "signing_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecdhPub",
+            "columnName": "ecdh_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wrappedSigningPriv",
+            "columnName": "wrapped_signing_priv",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wrappedEcdhPriv",
+            "columnName": "wrapped_ecdh_priv",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sender_fp"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "peers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sender_fp` INTEGER NOT NULL, `signing_pub` BLOB NOT NULL, `ecdh_pub` BLOB NOT NULL, `alias` TEXT NOT NULL, `verified` INTEGER NOT NULL, `first_seen_ms` INTEGER NOT NULL, PRIMARY KEY(`sender_fp`))",
+        "fields": [
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPub",
+            "columnName": "signing_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecdhPub",
+            "columnName": "ecdh_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verified",
+            "columnName": "verified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenMs",
+            "columnName": "first_seen_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sender_fp"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "groups",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`group_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `my_role` TEXT NOT NULL, `current_epoch` INTEGER NOT NULL, `wrapped_current_key` BLOB NOT NULL, `prev_epoch` INTEGER, `wrapped_prev_key` BLOB, `grace_expires_ms` INTEGER, `roster_version` INTEGER NOT NULL, PRIMARY KEY(`group_id`))",
+        "fields": [
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "myRole",
+            "columnName": "my_role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentEpoch",
+            "columnName": "current_epoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wrappedCurrentKey",
+            "columnName": "wrapped_current_key",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prevEpoch",
+            "columnName": "prev_epoch",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wrappedPrevKey",
+            "columnName": "wrapped_prev_key",
+            "affinity": "BLOB",
+            "notNull": false
+          },
+          {
+            "fieldPath": "graceExpiresMs",
+            "columnName": "grace_expires_ms",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "rosterVersion",
+            "columnName": "roster_version",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "group_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "roster_members",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`group_id` INTEGER NOT NULL, `sender_fp` INTEGER NOT NULL, `signing_pub` BLOB NOT NULL, `ecdh_pub` BLOB NOT NULL, `alias` TEXT NOT NULL, `revoked` INTEGER NOT NULL, PRIMARY KEY(`group_id`, `sender_fp`))",
+        "fields": [
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPub",
+            "columnName": "signing_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecdhPub",
+            "columnName": "ecdh_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revoked",
+            "columnName": "revoked",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "group_id",
+            "sender_fp"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '58a4581a12c2c883656833b92a8f2718')"
+    ]
+  }
+}
