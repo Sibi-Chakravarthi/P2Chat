@@ -47,6 +47,9 @@ import androidx.compose.runtime.LaunchedEffect
 import com.p2chat.crypto.keys.IdentityManager
 import com.p2chat.data.db.AppDatabase
 import com.p2chat.ui.common.LoadingState
+import com.p2chat.crypto.group.GroupManager
+import com.p2chat.ui.groups.GroupListScreen
+import com.p2chat.ui.groups.GroupListViewModel
 import com.p2chat.ui.onboarding.OnboardingScreen
 import com.p2chat.ui.onboarding.OnboardingViewModel
 
@@ -57,12 +60,21 @@ class MainActivity : ComponentActivity() {
         val identityManager = IdentityManager(database.localIdentityDao())
         val peerDao = database.peerDao()
         val onboardingViewModel = OnboardingViewModel(identityManager, peerDao)
+        val groupManager = GroupManager(database.groupDao(), database.rosterMemberDao())
+        val groupListViewModel = GroupListViewModel(
+            groupDao = database.groupDao(),
+            rosterMemberDao = database.rosterMemberDao(),
+            messageDao = database.messageDao(),
+            groupManager = groupManager,
+            identityManager = identityManager
+        )
 
         setContent {
             P2ChatTheme {
                 P2ChatMainApp(
                     identityManager = identityManager,
-                    onboardingViewModel = onboardingViewModel
+                    onboardingViewModel = onboardingViewModel,
+                    groupListViewModel = groupListViewModel
                 )
             }
         }
@@ -73,6 +85,7 @@ class MainActivity : ComponentActivity() {
 fun P2ChatMainApp(
     identityManager: IdentityManager,
     onboardingViewModel: OnboardingViewModel,
+    groupListViewModel: GroupListViewModel,
     modifier: Modifier = Modifier
 ) {
     var hasIdentity by remember { mutableStateOf<Boolean?>(null) }
@@ -96,13 +109,17 @@ fun P2ChatMainApp(
             )
         }
         true -> {
-            P2ChatAppShell(modifier = modifier)
+            P2ChatAppShell(
+                groupListViewModel = groupListViewModel,
+                modifier = modifier
+            )
         }
     }
 }
 
 @Composable
 fun P2ChatAppShell(
+    groupListViewModel: GroupListViewModel,
     modifier: Modifier = Modifier
 ) {
     var currentTab by remember { mutableStateOf(NavigationDestination.CHATS) }
@@ -123,7 +140,10 @@ fun P2ChatAppShell(
                 .padding(innerPadding)
         ) {
             when (currentTab) {
-                NavigationDestination.CHATS -> ChatsScreen()
+                NavigationDestination.CHATS -> GroupListScreen(
+                    viewModel = groupListViewModel,
+                    onGroupClick = { /* Navigate to chat in T4.5 */ }
+                )
                 NavigationDestination.RADAR -> RadarScreen()
                 NavigationDestination.AI_FILTER -> FilterScreen()
                 NavigationDestination.BENCH -> BenchScreen()
