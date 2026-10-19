@@ -34,6 +34,9 @@ interface BlockedVectorDao {
     @Query("DELETE FROM user_blocked_vectors WHERE id = :id")
     suspend fun deleteById(id: Long): Int
 
+    @Query("UPDATE user_blocked_vectors SET force_quarantine = :forceQuarantine WHERE id = :id")
+    suspend fun updateForceQuarantine(id: Long, forceQuarantine: Boolean): Int
+
     @Query("DELETE FROM user_blocked_vectors")
     suspend fun deleteAll(): Int
 

@@ -67,4 +67,8 @@ class FilterSettingsRepository(private val settingDao: SettingDao) {
         settingDao.putFloat(FilterSettings.KEY_TAU_BLOCK, block)
         return FilterSettings(warn, block)
     }
+
+    suspend fun resetToDefaults(): FilterSettings {
+        return updateSettings(FilterSettings.DEFAULT_TAU_WARN, FilterSettings.DEFAULT_TAU_BLOCK)
+    }
 }

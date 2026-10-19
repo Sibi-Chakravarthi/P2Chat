@@ -98,6 +98,12 @@ class BlockSimilarAndQuarantineUnitTest {
             vectors.firstOrNull { it.sourceMsgId == msgId }
 
         override suspend fun deleteById(id: Long): Int = if (vectors.removeIf { it.id == id }) 1 else 0
+        override suspend fun updateForceQuarantine(id: Long, forceQuarantine: Boolean): Int {
+            val index = vectors.indexOfFirst { it.id == id }
+            if (index == -1) return 0
+            vectors[index] = vectors[index].copy(forceQuarantine = forceQuarantine)
+            return 1
+        }
         override suspend fun deleteAll(): Int {
             val size = vectors.size
             vectors.clear()
