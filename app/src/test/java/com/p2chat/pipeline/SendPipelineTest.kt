@@ -135,6 +135,7 @@ class SendPipelineTest {
         override suspend fun delete(msgId: Long): Int = if (buffer.remove(msgId) != null) 1 else 0
         override suspend fun purgeExpired(nowMs: Long): Int = 0
         override suspend fun countBuffer(): Int = buffer.size
+        override fun observeBufferCount(): Flow<Int> = flowOf(buffer.size)
         override suspend fun allMsgIds(): List<Long> = buffer.keys.toList()
         override suspend fun getPacket(msgId: Long): BufferedPacket? = buffer[msgId]
         override suspend fun getPacketsToForward(limit: Int): List<BufferedPacket> =

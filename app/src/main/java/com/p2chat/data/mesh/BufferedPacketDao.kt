@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Room DAO for packet_buffer table (NET-9).
@@ -26,6 +27,9 @@ interface BufferedPacketDao {
 
     @Query("SELECT COUNT(*) FROM packet_buffer")
     suspend fun countBuffer(): Int
+
+    @Query("SELECT COUNT(*) FROM packet_buffer")
+    fun observeBufferCount(): Flow<Int>
 
     @Query("SELECT msg_id FROM packet_buffer")
     suspend fun allMsgIds(): List<Long>
