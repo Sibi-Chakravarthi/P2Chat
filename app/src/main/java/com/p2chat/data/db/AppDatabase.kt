@@ -11,6 +11,9 @@ import com.p2chat.data.ai.BlockedVectorDao
 import com.p2chat.data.ai.BlockedVectorEntity
 import com.p2chat.data.ai.QuarantineDao
 import com.p2chat.data.ai.QuarantineEntity
+import com.p2chat.data.bench.BenchDao
+import com.p2chat.data.bench.BenchRunEntity
+import com.p2chat.data.bench.BenchSampleEntity
 import com.p2chat.data.group.GroupDao
 import com.p2chat.data.group.GroupEntity
 import com.p2chat.data.group.RosterMember
@@ -32,7 +35,7 @@ import com.p2chat.data.settings.SettingDao
 /**
  * P2Chat primary Room database (Decision 10, PRD §4).
  * Single local encrypted database storing mesh deduplication, packet buffer,
- * identities, groups, roster, messages, quarantine, and user blocked vectors.
+ * identities, groups, roster, messages, quarantine, user blocked vectors, and benchmark runs.
  */
 @Database(
     entities = [
@@ -45,9 +48,11 @@ import com.p2chat.data.settings.SettingDao
         Setting::class,
         MessageEntity::class,
         QuarantineEntity::class,
-        BlockedVectorEntity::class
+        BlockedVectorEntity::class,
+        BenchRunEntity::class,
+        BenchSampleEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(LocalAtRestCipher::class)
@@ -63,6 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
     abstract fun quarantineDao(): QuarantineDao
     abstract fun blockedVectorDao(): BlockedVectorDao
+    abstract fun benchDao(): BenchDao
 
     companion object {
         const val DATABASE_NAME = "p2chat.db"
@@ -190,6 +196,52 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `bench_runs` (
+                        `run_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `started_at_ms` INTEGER NOT NULL,
+                        `finished_at_ms` INTEGER NOT NULL,
+                        `burst_count` INTEGER NOT NULL,
+                        `interval_ms` INTEGER NOT NULL,
+                        `payload_bytes` INTEGER NOT NULL,
+                        `initial_ttl` INTEGER NOT NULL,
+                        `connected_peers` INTEGER NOT NULL,
+                        `pdr_percent` REAL NOT NULL,
+                        `rtt_half_p50_ms` REAL NOT NULL,
+                        `rtt_half_p95_ms` REAL NOT NULL,
+                        `throughput_bps` REAL NOT NULL,
+                        `inference_p50_ms` REAL NOT NULL,
+                        `inference_p95_ms` REAL NOT NULL,
+                        `device_models` TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `bench_samples` (
+                        `run_id` INTEGER NOT NULL,
+                        `msg_id` INTEGER NOT NULL,
+                        `seq_num` INTEGER NOT NULL,
+                        `initial_ttl` INTEGER NOT NULL,
+                        `received_ttl` INTEGER NOT NULL,
+                        `hop_count` INTEGER NOT NULL,
+                        `sent_mono_ns` INTEGER NOT NULL,
+                        `ack_mono_ns` INTEGER NOT NULL,
+                        `rtt_half_ms` REAL NOT NULL,
+                        `delivered` INTEGER NOT NULL,
+                        PRIMARY KEY(`run_id`, `msg_id`),
+                        FOREIGN KEY(`run_id`) REFERENCES `bench_runs`(`run_id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_bench_samples_run_id` ON `bench_samples` (`run_id`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_bench_samples_run_id_delivered` ON `bench_samples` (`run_id`, `delivered`)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -200,7 +252,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     DATABASE_NAME
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                     .also { INSTANCE = it }
             }

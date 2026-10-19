@@ -1,0 +1,744 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 5,
+    "identityHash": "12976fe63c156646b2874806a11519e0",
+    "entities": [
+      {
+        "tableName": "seen_messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `first_seen_ms` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenMs",
+            "columnName": "first_seen_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "packet_buffer",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `group_id` INTEGER NOT NULL, `packet_type` INTEGER NOT NULL, `frame` BLOB NOT NULL, `received_ttl` INTEGER NOT NULL, `stored_at_ms` INTEGER NOT NULL, `expires_at_ms` INTEGER NOT NULL, `priority` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "packetType",
+            "columnName": "packet_type",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frame",
+            "columnName": "frame",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedTtl",
+            "columnName": "received_ttl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "storedAtMs",
+            "columnName": "stored_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtMs",
+            "columnName": "expires_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "priority",
+            "columnName": "priority",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "local_identity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sender_fp` INTEGER NOT NULL, `alias` TEXT NOT NULL, `signing_pub` BLOB NOT NULL, `ecdh_pub` BLOB NOT NULL, `wrapped_signing_priv` BLOB NOT NULL, `wrapped_ecdh_priv` BLOB NOT NULL, PRIMARY KEY(`sender_fp`))",
+        "fields": [
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPub",
+            "columnName": "signing_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecdhPub",
+            "columnName": "ecdh_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wrappedSigningPriv",
+            "columnName": "wrapped_signing_priv",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wrappedEcdhPriv",
+            "columnName": "wrapped_ecdh_priv",
+            "affinity": "BLOB",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sender_fp"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "peers",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`sender_fp` INTEGER NOT NULL, `signing_pub` BLOB NOT NULL, `ecdh_pub` BLOB NOT NULL, `alias` TEXT NOT NULL, `verified` INTEGER NOT NULL, `first_seen_ms` INTEGER NOT NULL, PRIMARY KEY(`sender_fp`))",
+        "fields": [
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPub",
+            "columnName": "signing_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecdhPub",
+            "columnName": "ecdh_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "verified",
+            "columnName": "verified",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstSeenMs",
+            "columnName": "first_seen_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "sender_fp"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "groups",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`group_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `my_role` TEXT NOT NULL, `current_epoch` INTEGER NOT NULL, `wrapped_current_key` BLOB NOT NULL, `prev_epoch` INTEGER, `wrapped_prev_key` BLOB, `grace_expires_ms` INTEGER, `roster_version` INTEGER NOT NULL, PRIMARY KEY(`group_id`))",
+        "fields": [
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "myRole",
+            "columnName": "my_role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "currentEpoch",
+            "columnName": "current_epoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wrappedCurrentKey",
+            "columnName": "wrapped_current_key",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "prevEpoch",
+            "columnName": "prev_epoch",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "wrappedPrevKey",
+            "columnName": "wrapped_prev_key",
+            "affinity": "BLOB",
+            "notNull": false
+          },
+          {
+            "fieldPath": "graceExpiresMs",
+            "columnName": "grace_expires_ms",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "rosterVersion",
+            "columnName": "roster_version",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "group_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "roster_members",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`group_id` INTEGER NOT NULL, `sender_fp` INTEGER NOT NULL, `signing_pub` BLOB NOT NULL, `ecdh_pub` BLOB NOT NULL, `alias` TEXT NOT NULL, `revoked` INTEGER NOT NULL, PRIMARY KEY(`group_id`, `sender_fp`))",
+        "fields": [
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "signingPub",
+            "columnName": "signing_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ecdhPub",
+            "columnName": "ecdh_pub",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "alias",
+            "columnName": "alias",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revoked",
+            "columnName": "revoked",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "group_id",
+            "sender_fp"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "settings",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`key` TEXT NOT NULL, `value` TEXT NOT NULL, PRIMARY KEY(`key`))",
+        "fields": [
+          {
+            "fieldPath": "key",
+            "columnName": "key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "value",
+            "columnName": "value",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "key"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "messages",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `group_id` INTEGER NOT NULL, `sender_fp` INTEGER NOT NULL, `key_epoch` INTEGER NOT NULL, `sent_at_ms` INTEGER NOT NULL, `received_at_ms` INTEGER NOT NULL, `body` BLOB NOT NULL, `sig_ok` INTEGER NOT NULL, `tier` INTEGER NOT NULL, `score` REAL NOT NULL, `revealed` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "keyEpoch",
+            "columnName": "key_epoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sentAtMs",
+            "columnName": "sent_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedAtMs",
+            "columnName": "received_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sigOk",
+            "columnName": "sig_ok",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tier",
+            "columnName": "tier",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "revealed",
+            "columnName": "revealed",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "quarantine",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`msg_id` INTEGER NOT NULL, `group_id` INTEGER NOT NULL, `sender_fp` INTEGER NOT NULL, `body` BLOB NOT NULL, `score` REAL NOT NULL, `nearest_category` TEXT NOT NULL, `created_at_ms` INTEGER NOT NULL, `expires_at_ms` INTEGER NOT NULL, PRIMARY KEY(`msg_id`))",
+        "fields": [
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "groupId",
+            "columnName": "group_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "senderFp",
+            "columnName": "sender_fp",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "score",
+            "columnName": "score",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nearestCategory",
+            "columnName": "nearest_category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtMs",
+            "columnName": "created_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtMs",
+            "columnName": "expires_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "msg_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "user_blocked_vectors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `vector` BLOB NOT NULL, `force_quarantine` INTEGER NOT NULL, `source_msg_id` INTEGER NOT NULL, `created_at_ms` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vector",
+            "columnName": "vector",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "forceQuarantine",
+            "columnName": "force_quarantine",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sourceMsgId",
+            "columnName": "source_msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtMs",
+            "columnName": "created_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "bench_runs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`run_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `started_at_ms` INTEGER NOT NULL, `finished_at_ms` INTEGER NOT NULL, `burst_count` INTEGER NOT NULL, `interval_ms` INTEGER NOT NULL, `payload_bytes` INTEGER NOT NULL, `initial_ttl` INTEGER NOT NULL, `connected_peers` INTEGER NOT NULL, `pdr_percent` REAL NOT NULL, `rtt_half_p50_ms` REAL NOT NULL, `rtt_half_p95_ms` REAL NOT NULL, `throughput_bps` REAL NOT NULL, `inference_p50_ms` REAL NOT NULL, `inference_p95_ms` REAL NOT NULL, `device_models` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "runId",
+            "columnName": "run_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startedAtMs",
+            "columnName": "started_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "finishedAtMs",
+            "columnName": "finished_at_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "burstCount",
+            "columnName": "burst_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intervalMs",
+            "columnName": "interval_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "payloadBytes",
+            "columnName": "payload_bytes",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "initialTtl",
+            "columnName": "initial_ttl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "connectedPeers",
+            "columnName": "connected_peers",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pdrPercent",
+            "columnName": "pdr_percent",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rttHalfP50Ms",
+            "columnName": "rtt_half_p50_ms",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rttHalfP95Ms",
+            "columnName": "rtt_half_p95_ms",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "throughputBps",
+            "columnName": "throughput_bps",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inferenceP50Ms",
+            "columnName": "inference_p50_ms",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "inferenceP95Ms",
+            "columnName": "inference_p95_ms",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "deviceModels",
+            "columnName": "device_models",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "run_id"
+          ]
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "bench_samples",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`run_id` INTEGER NOT NULL, `msg_id` INTEGER NOT NULL, `seq_num` INTEGER NOT NULL, `initial_ttl` INTEGER NOT NULL, `received_ttl` INTEGER NOT NULL, `hop_count` INTEGER NOT NULL, `sent_mono_ns` INTEGER NOT NULL, `ack_mono_ns` INTEGER NOT NULL, `rtt_half_ms` REAL NOT NULL, `delivered` INTEGER NOT NULL, PRIMARY KEY(`run_id`, `msg_id`), FOREIGN KEY(`run_id`) REFERENCES `bench_runs`(`run_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "runId",
+            "columnName": "run_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "msgId",
+            "columnName": "msg_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "seqNum",
+            "columnName": "seq_num",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "initialTtl",
+            "columnName": "initial_ttl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "receivedTtl",
+            "columnName": "received_ttl",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "hopCount",
+            "columnName": "hop_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sentMonoNs",
+            "columnName": "sent_mono_ns",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ackMonoNs",
+            "columnName": "ack_mono_ns",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rttHalfMs",
+            "columnName": "rtt_half_ms",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "delivered",
+            "columnName": "delivered",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "run_id",
+            "msg_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_bench_samples_run_id",
+            "unique": false,
+            "columnNames": [
+              "run_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_bench_samples_run_id` ON `${TABLE_NAME}` (`run_id`)"
+          },
+          {
+            "name": "index_bench_samples_run_id_delivered",
+            "unique": false,
+            "columnNames": [
+              "run_id",
+              "delivered"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_bench_samples_run_id_delivered` ON `${TABLE_NAME}` (`run_id`, `delivered`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "bench_runs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "run_id"
+            ],
+            "referencedColumns": [
+              "run_id"
+            ]
+          }
+        ]
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '12976fe63c156646b2874806a11519e0')"
+    ]
+  }
+}
