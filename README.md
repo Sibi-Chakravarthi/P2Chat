@@ -8,9 +8,12 @@ Each receiving device runs an **on-device semantic toxicity filter** (quantized 
 
 ## Key Documentation
 
-- [Product Requirements Document (PRD)](docs/PRD.md): Functional and non-functional requirements, security boundaries, and performance benchmarks.
+- [Product Requirements Document (PRD)](docs/PRD.md): Functional and non-functional requirements, security boundaries, and performance benchmarks (v1.0 Final Released).
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md): Architecture, data models, milestones (`M0`–`M4`), and task breakdown (`T0.1`–`T4.14`).
 - [Wire Protocol Specification](docs/WIRE_SPEC.md): Byte-level layouts for headers, payload encapsulation, transport chunks, and control frames.
+- [AI Asset Specification & Latency](docs/AI_ASSETS.md): Quantized MiniLM-L6-v2 TFLite model, tensor specifications, and memory footprint.
+- [AI Calibration Report](docs/CALIBRATION_REPORT.md): Jigsaw calibration, protest-safety false positive analysis, and threshold settings.
+- [Benchmark Results & Physical Verification](docs/BENCHMARK_RESULTS.md): Multi-hop latency, PDR delivery, and 3-device physical line verification.
 - [Toolchain & Pinned Versions](docs/TOOLCHAIN.md): Pinned versions, Android SDK targets, and verified Gradle commands.
 - [Working Rules for Agents](AGENTS.md): Coding guidelines, security invariants, and definition of done.
 
