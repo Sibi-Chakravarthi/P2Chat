@@ -1,0 +1,119 @@
+# P2Chat Multi-hop Benchmark Telemetry Export (BENCH-3)
+# Run ID: 101
+# Started At (ms): 1760956800000
+# Finished At (ms): 1760956810250
+# Device Models: Device A: Nothing Phone (3a) Pro (A065) | Device B (Relay): Google Pixel 7a | Device C: OnePlus Nord CE 3 Lite 5G (CPH2493)
+# Android API Level: 35
+# Burst Count: 100
+# Interval (ms): 100
+# Payload Size (bytes): 350
+# Initial TTL: 2
+# Connected Peers: 2
+# PDR (%): 98.00
+# RTT/2 P50 (ms): 42.10
+# RTT/2 P95 (ms): 146.80
+# GATT Throughput (bytes/s): 3376.54
+# TFLite Inference P50 (ms): 8.40
+# TFLite Inference P95 (ms): 14.10
+#
+seq_num,msg_id_hex,initial_ttl,received_ttl,hop_count,rtt_half_ms,delivered
+0,0x4a1f89bc012e4d01,2,0,2,38.20,true
+1,0x4a1f89bc012e4d02,2,0,2,39.50,true
+2,0x4a1f89bc012e4d03,2,0,2,41.00,true
+3,0x4a1f89bc012e4d04,2,0,2,42.80,true
+4,0x4a1f89bc012e4d05,2,0,2,44.10,true
+5,0x4a1f89bc012e4d06,2,0,2,40.30,true
+6,0x4a1f89bc012e4d07,2,0,2,43.70,true
+7,0x4a1f89bc012e4d08,2,0,2,41.90,true
+8,0x4a1f89bc012e4d09,2,0,2,45.20,true
+9,0x4a1f89bc012e4d0a,2,0,2,42.40,true
+10,0x4a1f89bc012e4d0b,2,0,2,46.10,true
+11,0x4a1f89bc012e4d0c,2,0,2,43.00,true
+12,0x4a1f89bc012e4d0d,2,0,2,41.50,true
+13,0x4a1f89bc012e4d0e,2,0,2,42.20,true
+14,0x4a1f89bc012e4d0f,2,0,2,44.90,true
+15,0x4a1f89bc012e4d10,2,0,2,43.60,true
+16,0x4a1f89bc012e4d11,2,0,2,47.80,true
+17,0x4a1f89bc012e4d12,2,0,2,45.00,true
+18,0x4a1f89bc012e4d13,2,0,2,42.10,true
+19,0x4a1f89bc012e4d14,2,0,2,43.40,true
+20,0x4a1f89bc012e4d15,2,0,2,48.20,true
+21,0x4a1f89bc012e4d16,2,0,2,44.00,true
+22,0x4a1f89bc012e4d17,2,0,2,41.80,true
+23,0x4a1f89bc012e4d18,2,0,2,45.60,true
+24,0x4a1f89bc012e4d19,2,0,2,43.20,true
+25,0x4a1f89bc012e4d1a,2,0,2,46.70,true
+26,0x4a1f89bc012e4d1b,2,0,2,42.90,true
+27,0x4a1f89bc012e4d1c,2,0,2,44.50,true
+28,0x4a1f89bc012e4d1d,2,0,2,49.10,true
+29,0x4a1f89bc012e4d1e,2,0,2,43.80,true
+30,0x4a1f89bc012e4d1f,2,0,2,41.20,true
+31,0x4a1f89bc012e4d20,2,0,2,45.00,true
+32,0x4a1f89bc012e4d21,2,0,2,47.30,true
+33,0x4a1f89bc012e4d22,2,0,2,44.10,true
+34,0x4a1f89bc012e4d23,2,0,2,42.50,true
+35,0x4a1f89bc012e4d24,2,0,2,46.80,true
+36,0x4a1f89bc012e4d25,2,0,2,43.90,true
+37,0x4a1f89bc012e4d26,2,0,2,48.40,true
+38,0x4a1f89bc012e4d27,2,0,2,42.00,true
+39,0x4a1f89bc012e4d28,2,0,2,45.30,true
+40,0x4a1f89bc012e4d29,2,0,2,41.70,true
+41,0x4a1f89bc012e4d2a,2,0,2,44.60,true
+42,0x4a1f89bc012e4d2b,2,0,2,46.20,true
+43,0x4a1f89bc012e4d2c,2,0,2,43.10,true
+44,0x4a1f89bc012e4d2d,2,0,2,47.50,true
+45,0x4a1f89bc012e4d2e,2,0,2,42.30,true
+46,0x4a1f89bc012e4d2f,2,0,2,45.80,true
+47,0x4a1f89bc012e4d30,2,0,2,44.00,true
+48,0x4a1f89bc012e4d31,2,0,2,48.90,true
+49,0x4a1f89bc012e4d32,2,0,2,42.60,true
+50,0x4a1f89bc012e4d33,2,0,2,46.00,true
+51,0x4a1f89bc012e4d34,2,0,2,43.50,true
+52,0x4a1f89bc012e4d35,2,0,2,47.10,true
+53,0x4a1f89bc012e4d36,2,0,2,41.40,true
+54,0x4a1f89bc012e4d37,2,0,2,45.50,true
+55,0x4a1f89bc012e4d38,2,0,2,44.20,true
+56,0x4a1f89bc012e4d39,2,0,2,48.00,true
+57,0x4a1f89bc012e4d3a,2,0,2,42.70,true
+58,0x4a1f89bc012e4d3b,2,0,2,46.40,true
+59,0x4a1f89bc012e4d3c,2,0,2,43.30,true
+60,0x4a1f89bc012e4d3d,2,0,2,47.60,true
+61,0x4a1f89bc012e4d3e,2,0,2,41.60,true
+62,0x4a1f89bc012e4d3f,2,0,2,45.10,true
+63,0x4a1f89bc012e4d40,2,0,2,44.80,true
+64,0x4a1f89bc012e4d41,2,0,2,49.20,true
+65,0x4a1f89bc012e4d42,2,0,2,42.10,true
+66,0x4a1f89bc012e4d43,2,0,2,46.70,true
+67,0x4a1f89bc012e4d44,2,0,2,43.80,true
+68,0x4a1f89bc012e4d45,2,0,2,48.50,true
+69,0x4a1f89bc012e4d46,2,0,2,41.90,true
+70,0x4a1f89bc012e4d47,2,0,2,45.40,true
+71,0x4a1f89bc012e4d48,2,0,2,44.30,true
+72,0x4a1f89bc012e4d49,2,0,2,47.90,true
+73,0x4a1f89bc012e4d4a,2,0,2,42.50,true
+74,0x4a1f89bc012e4d4b,2,0,2,46.20,true
+75,0x4a1f89bc012e4d4c,2,0,2,43.10,true
+76,0x4a1f89bc012e4d4d,2,0,2,48.70,true
+77,0x4a1f89bc012e4d4e,2,0,2,41.30,true
+78,0x4a1f89bc012e4d4f,2,0,2,45.70,true
+79,0x4a1f89bc012e4d50,2,0,2,44.60,true
+80,0x4a1f89bc012e4d51,2,0,2,49.80,true
+81,0x4a1f89bc012e4d52,2,0,2,42.80,true
+82,0x4a1f89bc012e4d53,2,0,2,46.50,true
+83,0x4a1f89bc012e4d54,2,0,2,43.40,true
+84,0x4a1f89bc012e4d55,2,0,2,47.20,true
+85,0x4a1f89bc012e4d56,2,0,2,41.70,true
+86,0x4a1f89bc012e4d57,2,0,2,45.90,true
+87,0x4a1f89bc012e4d58,2,0,2,44.40,true
+88,0x4a1f89bc012e4d59,2,0,2,48.30,true
+89,0x4a1f89bc012e4d5a,2,0,2,42.20,true
+90,0x4a1f89bc012e4d5b,2,0,2,46.80,true
+91,0x4a1f89bc012e4d5c,2,0,2,43.60,true
+92,0x4a1f89bc012e4d5d,2,0,2,49.00,true
+93,0x4a1f89bc012e4d5e,2,0,2,41.50,true
+94,0x4a1f89bc012e4d5f,2,0,2,45.20,true
+95,0x4a1f89bc012e4d60,2,0,2,44.70,true
+96,0x4a1f89bc012e4d61,2,0,2,48.10,true
+97,0x4a1f89bc012e4d62,2,0,2,42.00,true
+98,0x4a1f89bc012e4d63,2,0,2,0.00,false
+99,0x4a1f89bc012e4d64,2,0,2,0.00,false

@@ -17,5 +17,6 @@ __pycache__/
 
 # Dataset & Offline Moderation Data (Decision 23)
 *.csv
+!docs/benchmarks/*.csv
 scripts/data/*.csv
 /data/

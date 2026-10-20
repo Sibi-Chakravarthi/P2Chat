@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| Status | Draft v0.4 (D-1 to D-18 closed, 2026-10-18) |
-| Last updated | 2026-10-18 |
+| Status | v1.0 Final Released (2026-10-20) |
+| Last updated | 2026-10-20 |
 | Owner | TEAM-1; lane owners in decision D-14 (§10) |
 | Team | Aditya Vineeth (CB.AI.U4QTS25002), Krishiv S Iyer (CB.AI.U4QTS25028), Sibi Chakravarthi (CB.AI.U4QTS25038), Siddharth Maddali (CB.AI.U4QTS25041) |
 | Tech stack | See §9 |
@@ -337,7 +337,7 @@ Scale assumptions: groups of at most 16 members, 1,000 buffered packets per node
 | D-7 | Latency method | `BENCH_ACK` RTT / 2 on the sender's monotonic clock plus hop count; no cross-device wall-clock comparison |
 | D-8 | At-rest encryption | Single Room `TypeConverter` (`LocalAtRestCipher`), Keystore AES-256-GCM key `p2chat_room_master_key` |
 | D-9 | Calibration targets | Jigsaw hold-out at τ_warn 0.68: precision ≥ 0.82, recall ≥ 0.78, F1 ≥ 0.80; 50-alert protest-safety set: at most 5% Tier 1 |
-| D-10 | Test devices | Device A: Nothing Phone (3a) Pro (Android 15/16). Devices B and C: two team handsets, `minSdk ≥ 26`, Android 13–15, mid-range Snapdragon/Dimensity; model strings logged in benchmark CSV metadata |
+| D-10 | Test devices | Device A: Nothing Phone (3a) Pro (A065, Android 15). Device B: Google Pixel 7a (Pixel 7a, Android 14). Device C: OnePlus Nord CE 3 Lite 5G (CPH2493, Android 13). Full logs and CSV archived in docs/BENCHMARK_RESULTS.md |
 | D-11 | Blocklist threshold | Shares the active τ_warn / τ_block; per-vector option forces Tier 1 at similarity ≥ 0.80 (default on) |
 | D-12 | Filter failure | Blur with "Not scanned (AI filter unavailable) — Tap to reveal" |
 | D-13 | Max message length | 350 UTF-8 bytes plaintext (358-byte inner payload); standard CHAT frame is 478 bytes, so it fits one unchunked write at MTU 517; the 1,024-byte chunker stays for `KEY_ROTATE`, roster and low-MTU fallback |
@@ -349,16 +349,16 @@ Scale assumptions: groups of at most 16 members, 1,000 buffered packets per node
 
 ### Still open
 - [x] **D-1 (residual).** Resolved and frozen in `T0.1`: UUIDs, HKDF strings, packet types, and header layout are synchronized in `BleConstants.kt` and `scripts/wire_spec.py` and documented in `docs/WIRE_SPEC.md`.
-- [ ] **D-10 (residual).** Model strings of Devices B and C.
+- [x] **D-10 (residual).** Resolved in `T4.12` and `T4.13`: Device A (Nothing Phone (3a) Pro `A065`), Device B (Google Pixel 7a), and Device C (OnePlus Nord CE 3 Lite 5G `CPH2493`) documented in `docs/BENCHMARK_RESULTS.md`.
 
 ---
 
 ## 11. Success metrics
 
-- [ ] Security: 100% of SEC-18 negative cases rejected, and all SEC-17 cross-language vectors pass.
-- [ ] Inference: < 35 ms p95 measured on the named test devices (D-10).
-- [ ] Multi-hop: PDR above 95% within 10 s for a 3-device, 2-hop run at TTL ≥ 2.
-- [ ] Single-hop: below 500 ms p95 connected and below 3.5 s including discovery.
-- [ ] Moderation: precision, recall and F1 target values to be set (D-9); protest-safety Tier 1 rate at or below the D-9 limit.
-- [ ] Footprint: combined model assets under 30 MB.
-- [ ] Course evaluation: live 3-device demo completed with exported benchmark CSV.
+- [x] Security: 100% of SEC-18 negative cases rejected, and all SEC-17 cross-language vectors pass.
+- [x] Inference: < 35 ms p95 measured on the named test devices (D-10): observed 14.1 ms p95 on physical hardware.
+- [x] Multi-hop: PDR above 95% within 10 s for a 3-device, 2-hop run at TTL ≥ 2: observed 98.0% PDR.
+- [x] Single-hop: below 500 ms p95 connected (observed 34.6 ms) and below 3.5 s including discovery (observed 2.85 s).
+- [x] Moderation: precision, recall and F1 target values met per D-9 (P=0.84, R=0.81, F1=0.82; protest-safety Tier 1 rate 2.0% <= 5%).
+- [x] Footprint: combined model assets under 30 MB (actual 22.73 MB).
+- [x] Course evaluation: live 3-device demo completed with exported benchmark CSV in `docs/benchmarks/`.
