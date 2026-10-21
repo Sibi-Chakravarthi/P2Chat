@@ -261,7 +261,8 @@ fun MessageBubble(
                                 text = overlayText,
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
-                                textAlign = TextAlign.Center
+                                textAlign = TextAlign.Center,
+                                color = if (message.tier == 2) OnStarkPrimary else TextPrimary
                             )
                         }
                     }

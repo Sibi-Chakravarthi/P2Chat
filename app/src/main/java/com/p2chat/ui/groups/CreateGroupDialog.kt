@@ -8,8 +8,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +49,7 @@ import com.p2chat.ui.theme.TextTertiary
 fun CreateGroupDialog(
     onDismissRequest: () -> Unit,
     onConfirmCreate: (name: String) -> Unit,
+    onScanInviteQr: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var groupName by remember { mutableStateOf("") }
@@ -152,7 +157,31 @@ fun CreateGroupDialog(
                         contentColor = OnStarkPrimary
                     )
                 ) {
-                    Text("Create")
+                    Text("Create", color = OnStarkPrimary)
+                }
+            }
+
+            if (onScanInviteQr != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = {
+                        onDismissRequest()
+                        onScanInviteQr()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics { contentDescription = "Scan Invite QR to join group" },
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = StarkPrimary),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, HairlineBorder)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = StarkPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Scan Invite QR to Join", color = TextPrimary)
                 }
             }
         }

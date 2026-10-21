@@ -2,6 +2,9 @@ package com.p2chat.ui.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.p2chat.crypto.group.GroupManager
+import com.p2chat.crypto.group.RosterMemberInfo
+import com.p2chat.crypto.invite.GroupInviteCodec
 import com.p2chat.crypto.invite.PeerPinning
 import com.p2chat.crypto.invite.PinningVerdict
 import com.p2chat.crypto.invite.QrPayload
@@ -18,7 +21,8 @@ import kotlinx.coroutines.launch
 
 class OnboardingViewModel(
     private val identityManager: IdentityManager,
-    private val peerDao: PeerDao
+    private val peerDao: PeerDao,
+    private val groupManager: GroupManager? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<OnboardingUiState>(OnboardingUiState.Idle)
@@ -39,10 +43,28 @@ class OnboardingViewModel(
             try {
                 val existing = identityManager.getIdentity()
                 if (existing != null) {
+                    _alias.value = existing.alias
                     emitSuccessState(existing)
                 }
             } catch (e: Exception) {
                 _uiState.value = OnboardingUiState.Error("Failed to check identity: ${e.message}")
+            }
+        }
+    }
+
+    fun updateAlias(newAlias: String) {
+        val trimmed = newAlias.trim()
+        if (!validateAlias(trimmed)) return
+        viewModelScope.launch {
+            try {
+                identityManager.updateAlias(trimmed)
+                _alias.value = trimmed
+                val existing = identityManager.getIdentity()
+                if (existing != null) {
+                    emitSuccessState(existing)
+                }
+            } catch (e: Exception) {
+                _uiState.value = OnboardingUiState.Error("Failed to update alias: ${e.message}")
             }
         }
     }
@@ -96,6 +118,54 @@ class OnboardingViewModel(
 
     fun processScannedQr(qrBase64: String) {
         viewModelScope.launch {
+            // 1. Check if optical code is a Group Invite (SEC-9)
+            if (GroupInviteCodec.isInvite(qrBase64)) {
+                val inviteResult = GroupInviteCodec.decode(qrBase64)
+                if (inviteResult.isSuccess) {
+                    val invite = inviteResult.getOrThrow()
+                    // Pin the group admin
+                    val adminPeer = Peer(
+                        senderFp = invite.adminFp,
+                        signingPub = invite.adminSigningPub,
+                        ecdhPub = invite.adminEcdhPub,
+                        alias = invite.adminAlias,
+                        verified = true,
+                        firstSeenMs = System.currentTimeMillis()
+                    )
+                    peerDao.pinOrVerifyPeer(adminPeer)
+
+                    // Join group if GroupManager is available
+                    val selfIdentity = identityManager.getIdentity()
+                    if (groupManager != null && selfIdentity != null) {
+                        val adminMember = RosterMemberInfo(
+                            senderFp = invite.adminFp,
+                            signingPub = invite.adminSigningPub,
+                            ecdhPub = invite.adminEcdhPub,
+                            alias = invite.adminAlias,
+                            revoked = false
+                        )
+                        val selfMember = RosterMemberInfo(
+                            senderFp = selfIdentity.senderFp,
+                            signingPub = selfIdentity.signingPub,
+                            ecdhPub = selfIdentity.ecdhPub,
+                            alias = selfIdentity.alias,
+                            revoked = false
+                        )
+                        groupManager.joinGroup(
+                            groupId = invite.groupId,
+                            name = invite.groupName,
+                            rawGroupKey = invite.groupKey,
+                            keyEpoch = invite.keyEpoch,
+                            rosterVersion = 1,
+                            members = listOf(adminMember, selfMember)
+                        )
+                    }
+                    updateCurrentStateWithScannedPeer(adminPeer, keyConflict = null)
+                    return@launch
+                }
+            }
+
+            // 2. Decode mutual optical peer handshake (ID-4)
             val decodeResult = QrPayloadCodec.decodeFromBase64(qrBase64)
             if (decodeResult.isFailure) {
                 _uiState.value = OnboardingUiState.Error("Malformed QR code: Invalid P2Chat optical payload")

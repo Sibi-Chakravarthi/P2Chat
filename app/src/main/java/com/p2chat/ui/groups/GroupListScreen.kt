@@ -99,9 +99,13 @@ fun GroupListScreen(
             onConfirmCreate = { name ->
                 showCreateDialog = false
                 scope.launch {
-                    viewModel.createGroup(name)
+                    val result = viewModel.createGroup(name)
+                    result.getOrNull()?.let { newGroupId ->
+                        onGroupClick(newGroupId)
+                    }
                 }
-            }
+            },
+            onScanInviteQr = onScanQrClick
         )
     }
 
@@ -374,7 +378,8 @@ fun BleStateBanner(
             Text(
                 text = buttonText,
                 style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = OnStarkPrimary
             )
         }
     }

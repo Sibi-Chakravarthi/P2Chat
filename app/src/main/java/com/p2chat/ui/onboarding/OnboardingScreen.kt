@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.CheckCircle
@@ -81,6 +82,8 @@ import kotlinx.coroutines.launch
 fun OnboardingScreen(
     viewModel: OnboardingViewModel,
     onOnboardingComplete: () -> Unit,
+    isProfileMode: Boolean = false,
+    onBackClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -121,11 +124,14 @@ fun OnboardingScreen(
                 aliasError = aliasError,
                 isCreated = false,
                 createdState = null,
+                isProfileMode = isProfileMode,
+                onBackClick = onBackClick,
                 onAliasChange = { viewModel.setAlias(it) },
+                onUpdateAlias = { viewModel.updateAlias(it) },
                 onRegenerateAlias = { viewModel.generateRandomAlias() },
                 onGenerateIdentity = { viewModel.generateIdentity() },
                 onScanPeerClick = { showScanner = true },
-                onContinueClick = onOnboardingComplete,
+                onContinueClick = { onBackClick?.invoke() ?: onOnboardingComplete() },
                 modifier = modifier
             )
         }
@@ -135,11 +141,14 @@ fun OnboardingScreen(
                 aliasError = aliasError,
                 isCreated = true,
                 createdState = state,
+                isProfileMode = isProfileMode,
+                onBackClick = onBackClick,
                 onAliasChange = { viewModel.setAlias(it) },
+                onUpdateAlias = { viewModel.updateAlias(it) },
                 onRegenerateAlias = { viewModel.generateRandomAlias() },
                 onGenerateIdentity = { viewModel.generateIdentity() },
                 onScanPeerClick = { showScanner = true },
-                onContinueClick = onOnboardingComplete,
+                onContinueClick = { onBackClick?.invoke() ?: onOnboardingComplete() },
                 modifier = modifier
             )
         }
@@ -152,7 +161,10 @@ private fun OnboardingContent(
     aliasError: String?,
     isCreated: Boolean,
     createdState: OnboardingUiState.Created?,
+    isProfileMode: Boolean,
+    onBackClick: (() -> Unit)?,
     onAliasChange: (String) -> Unit,
+    onUpdateAlias: (String) -> Unit,
     onRegenerateAlias: () -> Unit,
     onGenerateIdentity: () -> Unit,
     onScanPeerClick: () -> Unit,
@@ -172,51 +184,79 @@ private fun OnboardingContent(
             .verticalScroll(scrollState),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Step & Enclave Status Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "STEP 1 OF 1 • PROVISIONING",
-                style = MaterialTheme.typography.labelSmall,
-                color = WarningAmber,
-                fontWeight = FontWeight.SemiBold
-            )
+        if (isProfileMode && onBackClick != null) {
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(SurfaceBright)
-                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .clip(CircleShape)
-                        .background(VerifiedGreen)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.semantics { contentDescription = "Back to chats" }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,
+                        tint = StarkPrimary
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "OFFLINE SECURE ENCLAVE",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = VerifiedGreen,
+                    text = "Identity & QR",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = TextPrimary,
                     fontWeight = FontWeight.Bold
                 )
+            }
+        } else {
+            // Step & Enclave Status Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "STEP 1 OF 1 • PROVISIONING",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = WarningAmber,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(SurfaceBright)
+                        .padding(horizontal = 8.dp, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(VerifiedGreen)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "OFFLINE SECURE ENCLAVE",
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                        color = VerifiedGreen,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
         // Title and description
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = "Identity Generation",
+                text = if (isProfileMode) "Tactical Profile" else "Identity Generation",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextPrimary,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Initialize physical hardware security keys for offline mesh discovery and mutual verification.",
+                text = if (isProfileMode)
+                    "Hardware security keys for decentralized offline mesh discovery and peer verification."
+                else
+                    "Initialize physical hardware security keys for offline mesh discovery and mutual verification.",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
@@ -278,7 +318,7 @@ private fun OnboardingContent(
             OutlinedTextField(
                 value = alias,
                 onValueChange = onAliasChange,
-                enabled = !isCreated,
+                enabled = !isCreated || isProfileMode,
                 modifier = Modifier
                     .fillMaxWidth()
                     .semantics { contentDescription = "Alias call sign input" },
@@ -350,7 +390,30 @@ private fun OnboardingContent(
                     Text(
                         text = "Initialize Keypair",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = OnStarkPrimary
+                    )
+                }
+            } else if (isProfileMode && createdState != null && alias != createdState.identity.alias) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Button(
+                    onClick = { onUpdateAlias(alias) },
+                    enabled = aliasError == null && alias.isNotEmpty() && alias.length <= 32,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                        .semantics { contentDescription = "Save updated alias" },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = StarkPrimary,
+                        contentColor = OnStarkPrimary
+                    )
+                ) {
+                    Text(
+                        text = "Save Updated Alias",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = OnStarkPrimary
                     )
                 }
             }
@@ -464,7 +527,8 @@ private fun OnboardingContent(
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = if (copied) "Copied" else "Copy",
-                            style = MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelSmall,
+                            color = StarkPrimary
                         )
                     }
                 }
@@ -535,9 +599,9 @@ private fun OnboardingContent(
 
                 Box(
                     modifier = Modifier
-                        .size(200.dp)
+                        .size(220.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(CanvasBackground)
+                        .background(Color.White)
                         .border(1.dp, HairlineBorder, RoundedCornerShape(12.dp))
                         .padding(12.dp),
                     contentAlignment = Alignment.Center
@@ -630,20 +694,22 @@ private fun OnboardingContent(
                         .semantics { contentDescription = "Scan Peer QR with CameraX" },
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = WarningAmber,
+                        containerColor = StarkPrimary,
                         contentColor = OnStarkPrimary
                     )
                 ) {
                     Icon(
                         imageVector = Icons.Default.PhotoCamera,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = OnStarkPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Scan Peer QR (CameraX)",
+                        text = "Scan Peer / Invite QR (CameraX)",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = OnStarkPrimary
                     )
                 }
 
@@ -652,7 +718,7 @@ private fun OnboardingContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
-                        .semantics { contentDescription = "Continue to Mesh" },
+                        .semantics { contentDescription = if (isProfileMode) "Done" else "Continue to Mesh" },
                     shape = RoundedCornerShape(24.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = SurfaceBright,
@@ -660,15 +726,17 @@ private fun OnboardingContent(
                     )
                 ) {
                     Text(
-                        text = "Continue to Mesh",
+                        text = if (isProfileMode) "Done" else "Continue to Mesh",
                         style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = TextPrimary
                     )
                 }
             }

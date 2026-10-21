@@ -82,6 +82,16 @@ class ReceivePipeline(
         // 3. Group membership check (SEC-2, NET-10)
         val group = groupDao.getGroup(header.groupId)
         if (group == null) {
+            if (header.packetType == PacketType.PAIRWISE_INVITE) {
+                controlPacketHandler.handleControlPacket(
+                    PacketVerdict.Accept(
+                        header = header,
+                        sentAtMs = clock.currentTimeMillis(),
+                        plaintext = ""
+                    ),
+                    frameBytes
+                )
+            }
             return@withContext PacketVerdict.NotMemberOpaque
         }
 

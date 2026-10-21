@@ -12,6 +12,7 @@ val SurfaceBright    = Color(0xFF27272A)
 val TextPrimary      = Color(0xFFF4F4F5)       // Crisp off-white
 val TextSecondary    = Color(0xFF71717A)       // Muted neutral grey
 val TextTertiary     = Color(0xFF52525B)       // Low-contrast disabled zinc
+val NavUnselected    = Color(0xFFA1A1AA)       // Increased contrast for unselected tabs
 
 // Accents & Semantic States
 val StarkPrimary     = Color(0xFFFAFAFA)       // High-contrast primary action fill

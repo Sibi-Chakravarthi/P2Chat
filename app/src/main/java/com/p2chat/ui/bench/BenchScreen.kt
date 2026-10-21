@@ -668,7 +668,8 @@ private fun BurstConfigCard(
                 Text(
                     text = if (isRunning) "BURST IN PROGRESS..." else "TRANSMIT PROBE BURST",
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = if (isValid && !isRunning) OnStarkPrimary else TextTertiary
                 )
             }
         }
@@ -737,7 +738,7 @@ private fun EchoNodeCard(
             ) {
                 Icon(imageVector = Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(6.dp))
-                Text(text = "ACTIVATE ECHO MODE", fontWeight = FontWeight.Bold)
+                Text(text = "ACTIVATE ECHO MODE", fontWeight = FontWeight.Bold, color = OnStarkPrimary)
             }
         }
     }

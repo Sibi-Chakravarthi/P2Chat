@@ -16,20 +16,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,23 +45,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.google.zxing.BinaryBitmap
 import com.google.zxing.MultiFormatReader
-import com.google.zxing.NotFoundException
-import com.google.zxing.PlanarYUVLuminanceSource
-import com.google.zxing.common.HybridBinarizer
 import com.p2chat.ui.common.EmptyState
 import com.p2chat.ui.theme.CanvasBackground
-import com.p2chat.ui.theme.HairlineBorder
-import com.p2chat.ui.theme.OnStarkPrimary
-import com.p2chat.ui.theme.StarkPrimary
 import com.p2chat.ui.theme.TextPrimary
 import com.p2chat.ui.theme.TextSecondary
 import com.p2chat.ui.theme.VerifiedGreen
+import com.p2chat.util.SecureLog
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+
+private const val TAG = "QrScanner"
 
 /**
  * CameraX QR code scanner with offline ZXing MultiFormatReader (ID-4, D-16).
+ * Incorporates row-stride normalization, sensor rotation handling, and dual normal/inverted decode passes.
  * Zero Google Play Services dependencies.
  */
 @Composable
@@ -149,10 +141,14 @@ private fun CameraPreviewWithScanner(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    var scanned by remember { mutableStateOf(false) }
+    val isScanned = remember { AtomicBoolean(false) }
 
     DisposableEffect(Unit) {
         onDispose {
+            try {
+                ProcessCameraProvider.getInstance(context).get().unbindAll()
+            } catch (_: Throwable) {
+            }
             cameraExecutor.shutdown()
         }
     }
@@ -160,7 +156,9 @@ private fun CameraPreviewWithScanner(
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
             factory = { ctx ->
-                val previewView = PreviewView(ctx)
+                val previewView = PreviewView(ctx).apply {
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+                }
                 val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
                 cameraProviderFuture.addListener({
@@ -173,15 +171,16 @@ private fun CameraPreviewWithScanner(
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build()
 
-                    val reader = MultiFormatReader()
+                    val reader = QrDecoder.createReader()
 
                     imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                        if (!scanned) {
+                        if (!isScanned.get()) {
                             scanFrame(imageProxy, reader) { rawText ->
-                                if (!scanned) {
-                                    scanned = true
-                                    onQrScanned(rawText)
-                                    onClose()
+                                if (isScanned.compareAndSet(false, true)) {
+                                    ContextCompat.getMainExecutor(ctx).execute {
+                                        onQrScanned(rawText)
+                                        onClose()
+                                    }
                                 }
                             }
                         } else {
@@ -197,7 +196,8 @@ private fun CameraPreviewWithScanner(
                             preview,
                             imageAnalysis
                         )
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        SecureLog.e(TAG, "Failed to bind camera: ${e.message}")
                     }
                 }, ContextCompat.getMainExecutor(ctx))
 
@@ -241,25 +241,24 @@ private fun scanFrame(
 ) {
     try {
         val mediaImage = imageProxy.image
-        if (mediaImage != null) {
-            val buffer = mediaImage.planes[0].buffer
-            val bytes = ByteArray(buffer.remaining())
-            buffer.get(bytes)
-
-            val width = imageProxy.width
-            val height = imageProxy.height
-            val source = PlanarYUVLuminanceSource(
-                bytes, width, height, 0, 0, width, height, false
+        if (mediaImage != null && mediaImage.planes.isNotEmpty()) {
+            val plane = mediaImage.planes[0]
+            val buffer = plane.buffer
+            val text = QrDecoder.decodePlane(
+                buffer = buffer,
+                width = imageProxy.width,
+                height = imageProxy.height,
+                rowStride = plane.rowStride,
+                pixelStride = plane.pixelStride,
+                rotationDegrees = imageProxy.imageInfo.rotationDegrees,
+                reader = reader
             )
-            val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
-            val result = reader.decodeWithState(binaryBitmap)
-            if (result != null && result.text.isNotEmpty()) {
-                onSuccess(result.text)
+            if (text != null && text.isNotEmpty()) {
+                onSuccess(text)
             }
         }
-    } catch (_: NotFoundException) {
-        // Frame did not contain a QR code
-    } catch (_: Exception) {
+    } catch (e: Exception) {
+        SecureLog.w(TAG, "Frame decode error: ${e.message}")
     } finally {
         imageProxy.close()
     }

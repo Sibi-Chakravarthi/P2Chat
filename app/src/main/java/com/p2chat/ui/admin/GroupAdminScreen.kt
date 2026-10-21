@@ -555,7 +555,8 @@ private fun RatchetEpochCard(
                 Text(
                     text = "Rotate Key Now",
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = OnStarkPrimary
                 )
             }
         }
@@ -817,7 +818,7 @@ private fun AdminAccessDenied(
             ),
             modifier = Modifier.semantics { contentDescription = "Go back to group chat" }
         ) {
-            Text("Go Back")
+            Text("Go Back", color = OnStarkPrimary)
         }
     }
 }

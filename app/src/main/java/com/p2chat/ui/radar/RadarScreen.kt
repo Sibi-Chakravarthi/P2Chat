@@ -206,11 +206,16 @@ fun RadarScreen(
                 if (uiState.peers.isEmpty()) {
                     item {
                         EmptyState(
-                            title = "Scanning for Mesh Nodes...",
+                            title = if (uiState.isMeshActive) "Scanning for Mesh Nodes..." else "Radar Inactive",
                             message = if (uiState.isMeshActive) {
                                 "No BLE peers discovered within radio range yet. Ensure nearby devices have P2Chat running."
                             } else {
-                                "Mesh radio is paused. Activate radio above to begin scanning for nearby nodes."
+                                "Mesh radio is paused. Activate radio to begin scanning for nearby nodes."
+                            },
+                            actionLabel = "Scan Mesh",
+                            onActionClick = {
+                                onRequestPermissionsClick()
+                                viewModel.toggleMesh()
                             },
                             modifier = Modifier
                                 .fillMaxWidth()

@@ -283,7 +283,8 @@ private fun ChatTopBar(
                 Text(
                     text = "Admin",
                     style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = WarningAmber
                 )
             }
         }

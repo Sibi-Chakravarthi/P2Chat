@@ -81,7 +81,8 @@ fun EmptyState(
                 ) {
                     Text(
                         text = actionLabel,
-                        style = MaterialTheme.typography.labelLarge
+                        style = MaterialTheme.typography.labelLarge,
+                        color = OnStarkPrimary
                     )
                 }
             }
@@ -171,7 +172,8 @@ fun ErrorState(
             ) {
                 Text(
                     text = retryLabel,
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
+                    color = DestructiveRose
                 )
             }
         }

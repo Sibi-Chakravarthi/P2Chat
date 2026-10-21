@@ -112,6 +112,36 @@ class GroupManager(
         return true
     }
 
+    /**
+     * Joins a group as a member upon accepting an invite (SEC-9).
+     */
+    suspend fun joinGroup(
+        groupId: Long,
+        name: String,
+        rawGroupKey: ByteArray,
+        keyEpoch: Int,
+        rosterVersion: Int,
+        members: List<RosterMemberInfo>
+    ): GroupEntity {
+        val existing = groupDao.getGroup(groupId)
+        if (existing != null) {
+            return existing
+        }
+        val wrappedGroupKey = keyVault.wrap(rawGroupKey)
+        val groupEntity = GroupEntity(
+            groupId = groupId,
+            name = name,
+            myRole = "MEMBER",
+            currentEpoch = keyEpoch,
+            wrappedCurrentKey = wrappedGroupKey,
+            rosterVersion = rosterVersion
+        )
+        groupDao.insertGroup(groupEntity)
+        val dbMembers = members.map { it.toRosterMember(groupId) }
+        rosterMemberDao.insertAll(dbMembers)
+        return groupEntity
+    }
+
     fun unwrapGroupKey(group: GroupEntity): ByteArray {
         return keyVault.unwrap(group.wrappedCurrentKey)
     }
