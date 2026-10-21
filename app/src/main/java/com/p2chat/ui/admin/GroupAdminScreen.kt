@@ -1,5 +1,6 @@
 package com.p2chat.ui.admin
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.PublishedWithChanges
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -50,10 +52,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -64,10 +68,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.p2chat.crypto.invite.GroupInviteCodec
 import com.p2chat.crypto.invite.QrPayloadCodec
 import com.p2chat.data.group.RosterMember
 import com.p2chat.ui.common.ErrorState
 import com.p2chat.ui.common.LoadingState
+import com.p2chat.ui.onboarding.QrCodeGenerator
 import com.p2chat.ui.onboarding.QrScannerScreen
 import com.p2chat.ui.theme.CanvasBackground
 import com.p2chat.ui.theme.DestructiveRose
@@ -83,6 +89,7 @@ import com.p2chat.ui.theme.VerifiedGreen
 import com.p2chat.ui.theme.WarningAmber
 import com.p2chat.wire.BleConstants
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 /**
  * Group Administration and Key Rotation screen matching docs/design/4._group_admin_key_rotation/
@@ -97,9 +104,22 @@ fun GroupAdminScreen(
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboardManager = LocalClipboardManager.current
+    val coroutineScope = rememberCoroutineScope()
 
     var memberToRemove by remember { mutableStateOf<RosterMember?>(null) }
     var showScanner by remember { mutableStateOf(false) }
+    var showInviteQrDialog by remember { mutableStateOf(false) }
+    var inviteQrBase64 by remember { mutableStateOf<String?>(null) }
+
+    val openInviteQrAction: () -> Unit = {
+        coroutineScope.launch {
+            val inviteData = viewModel.getGroupInviteData()
+            if (inviteData != null) {
+                inviteQrBase64 = GroupInviteCodec.encode(inviteData)
+                showInviteQrDialog = true
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collectLatest { msg ->
@@ -113,12 +133,23 @@ fun GroupAdminScreen(
                 val result = QrPayloadCodec.decodeFromBase64(rawQr)
                 result.getOrNull()?.let { payload ->
                     viewModel.addMemberFromQr(payload)
+                    openInviteQrAction()
                 }
                 showScanner = false
             },
             onClose = { showScanner = false }
         )
         return
+    }
+
+    if (showInviteQrDialog && inviteQrBase64 != null && uiState is GroupAdminUiState.Success) {
+        val successState = uiState as GroupAdminUiState.Success
+        GroupInviteQrDialog(
+            groupName = successState.group.name,
+            epoch = successState.group.currentEpoch,
+            inviteQrBase64 = inviteQrBase64!!,
+            onDismiss = { showInviteQrDialog = false }
+        )
     }
 
     if (memberToRemove != null) {
@@ -174,7 +205,10 @@ fun GroupAdminScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = CanvasBackground,
         topBar = {
-            AdminTopBar(onBackClick = onBackClick)
+            AdminTopBar(
+                onBackClick = onBackClick,
+                onShowInviteQrClick = openInviteQrAction
+            )
         },
         modifier = modifier.fillMaxSize()
     ) { innerPadding ->
@@ -242,7 +276,8 @@ fun GroupAdminScreen(
                                 memberCount = state.members.count { !it.revoked },
                                 maxMembers = BleConstants.MAX_ROSTER_MEMBERS,
                                 canAddMember = state.canAddMember,
-                                onAddMemberClick = { showScanner = true }
+                                onAddMemberClick = { showScanner = true },
+                                onShowInviteQrClick = openInviteQrAction
                             )
                         }
 
@@ -264,6 +299,7 @@ fun GroupAdminScreen(
 @Composable
 private fun AdminTopBar(
     onBackClick: () -> Unit,
+    onShowInviteQrClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -315,6 +351,17 @@ private fun AdminTopBar(
                     )
                 }
             }
+        }
+
+        IconButton(
+            onClick = onShowInviteQrClick,
+            modifier = Modifier.semantics { contentDescription = "Show Group Invite QR code" }
+        ) {
+            Icon(
+                imageVector = Icons.Default.QrCode2,
+                contentDescription = null,
+                tint = TextPrimary
+            )
         }
     }
 }
@@ -588,7 +635,8 @@ private fun RosterHeaderRow(
     memberCount: Int,
     maxMembers: Int,
     canAddMember: Boolean,
-    onAddMemberClick: () -> Unit
+    onAddMemberClick: () -> Unit,
+    onShowInviteQrClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -622,31 +670,54 @@ private fun RosterHeaderRow(
             )
         }
 
-        Button(
-            onClick = onAddMemberClick,
-            enabled = canAddMember,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SurfaceBright,
-                contentColor = if (canAddMember) StarkPrimary else TextTertiary
-            ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-            modifier = Modifier
-                .height(34.dp)
-                .semantics {
-                    contentDescription = if (canAddMember) "Add member via mutual QR scan" else "Add member disabled: roster full"
-                }
-        ) {
-            Icon(
-                imageVector = Icons.Default.PersonAdd,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = "Add Member",
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.SemiBold
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedButton(
+                onClick = onShowInviteQrClick,
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = StarkPrimary),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                modifier = Modifier
+                    .height(34.dp)
+                    .semantics { contentDescription = "Show Group Invite QR code" }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QrCode2,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Invite QR",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
+            Button(
+                onClick = onAddMemberClick,
+                enabled = canAddMember,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SurfaceBright,
+                    contentColor = if (canAddMember) StarkPrimary else TextTertiary
+                ),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                modifier = Modifier
+                    .height(34.dp)
+                    .semantics {
+                        contentDescription = if (canAddMember) "Add member via mutual QR scan" else "Add member disabled: roster full"
+                    }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Add via QR",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -821,4 +892,90 @@ private fun AdminAccessDenied(
             Text("Go Back", color = OnStarkPrimary)
         }
     }
+}
+
+/**
+ * High-contrast Group Invite QR dialog enabling in-person, 1-step group joining (SEC-9).
+ */
+@Composable
+private fun GroupInviteQrDialog(
+    groupName: String,
+    epoch: Int,
+    inviteQrBase64: String,
+    onDismiss: () -> Unit
+) {
+    val qrBitmap = remember(inviteQrBase64) {
+        QrCodeGenerator.generate(inviteQrBase64, sizePx = 400)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QrCode2,
+                    contentDescription = null,
+                    tint = VerifiedGreen
+                )
+                Text(
+                    text = "Group Invite QR",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = TextPrimary
+                )
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Have the target phone scan this QR code with their camera using 'Scan Peer / Invite QR' to join $groupName (Epoch $epoch) instantly (SEC-9).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(220.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White)
+                        .border(1.dp, HairlineBorder, RoundedCornerShape(12.dp))
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (qrBitmap != null) {
+                        Image(
+                            bitmap = qrBitmap,
+                            contentDescription = "Group Invite QR Code",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Text(
+                            text = "Failed to render QR",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = DestructiveRose
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onDismiss,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = StarkPrimary,
+                    contentColor = OnStarkPrimary
+                )
+            ) {
+                Text("Done")
+            }
+        },
+        containerColor = SurfaceContainer
+    )
 }

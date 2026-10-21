@@ -19,6 +19,7 @@ import com.p2chat.util.SecureLog
 import com.p2chat.wire.BleConstants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -27,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Manages dual-role BLE GATT operations (GATT Server + GATT Client)
- * coordinating active links, MTU negotiation, and packet routing (NET-1, NET-2, NET-3, T2.6, T2.8).
+ * coordinating active links, MTU negotiation, and chunked packet routing (NET-1, NET-2, NET-3, T2.2, T2.6, T2.8).
  */
 class GattMeshManager(
     private val context: Context,
@@ -54,6 +55,7 @@ class GattMeshManager(
     private val clientGattMap = ConcurrentHashMap<String, BluetoothGatt>()
     private val activeSinks = ConcurrentHashMap<String, PeerSink>()
     private val writeLocks = ConcurrentHashMap<String, Mutex>()
+    private val reassembler = Reassembler()
 
     // ── GATT Server ──────────────────────────────────────────────────────────
 
@@ -182,9 +184,10 @@ class GattMeshManager(
                     clientGattMap[addr] = gatt
                     connectionPool.setConnectionState(addr, PeerConnectionState.CONNECTED)
 
-                    // Request 517-byte MTU (T2.8)
-                    gatt.requestMtu(517)
-                    gatt.discoverServices()
+                    // Request 517-byte MTU (T2.8). If request fails, discover services directly.
+                    if (!gatt.requestMtu(517)) {
+                        gatt.discoverServices()
+                    }
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     SecureLog.d(TAG, "GATT Client disconnected from $addr")
                     clientGattMap.remove(addr)
@@ -194,6 +197,11 @@ class GattMeshManager(
                         gatt.close()
                     } catch (_: Throwable) {}
                 }
+            }
+
+            override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+                SecureLog.d(TAG, "GATT Client: MTU changed to $mtu for ${gatt.device.address} (status $status)")
+                gatt.discoverServices()
             }
 
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
@@ -223,6 +231,18 @@ class GattMeshManager(
                 }
             }
 
+            // Android 13+ (API 33+) callback
+            override fun onCharacteristicChanged(
+                gatt: BluetoothGatt,
+                characteristic: BluetoothGattCharacteristic,
+                value: ByteArray
+            ) {
+                if (characteristic.uuid == CHAR_UUID && value.isNotEmpty()) {
+                    handleIncomingFrame(value, gatt.device.address)
+                }
+            }
+
+            @Suppress("DEPRECATION")
             override fun onCharacteristicChanged(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
                 if (characteristic.uuid == CHAR_UUID) {
                     val bytes = characteristic.value ?: return
@@ -276,7 +296,13 @@ class GattMeshManager(
     private fun handleIncomingFrame(bytes: ByteArray, peerAddress: String) {
         scope.launch {
             try {
-                receivePipeline?.processFrame(bytes)
+                val completeFrame = reassembler.processIncomingPacket(peerAddress, bytes) ?: return@launch
+                val pipeline = receivePipeline ?: MeshService.sharedReceivePipeline
+                if (pipeline == null) {
+                    SecureLog.w(TAG, "receivePipeline is null, dropping frame from $peerAddress")
+                } else {
+                    pipeline.processFrame(completeFrame)
+                }
             } catch (t: Throwable) {
                 SecureLog.w(TAG, "Error in receivePipeline from $peerAddress: ${t.message}")
             }
@@ -293,14 +319,23 @@ class GattMeshManager(
             override suspend fun sendFrame(frameBytes: ByteArray): Boolean = mutex.withLock {
                 try {
                     characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        gatt.writeCharacteristic(characteristic, frameBytes, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == BluetoothGatt.GATT_SUCCESS
-                    } else {
-                        @Suppress("DEPRECATION")
-                        characteristic.value = frameBytes
-                        @Suppress("DEPRECATION")
-                        gatt.writeCharacteristic(characteristic)
+                    val chunks = Chunker.chunk(frameBytes, maxChunkSize = 480)
+                    var allOk = true
+                    for (chunk in chunks) {
+                        val ok = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            gatt.writeCharacteristic(characteristic, chunk, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == BluetoothGatt.GATT_SUCCESS
+                        } else {
+                            @Suppress("DEPRECATION")
+                            characteristic.value = chunk
+                            @Suppress("DEPRECATION")
+                            gatt.writeCharacteristic(characteristic)
+                        }
+                        if (!ok) allOk = false
+                        if (chunks.size > 1) {
+                            delay(10)
+                        }
                     }
+                    allOk
                 } catch (t: Throwable) {
                     SecureLog.w(TAG, "Client sink sendFrame failed to $address: ${t.message}")
                     false
@@ -325,14 +360,23 @@ class GattMeshManager(
 
             override suspend fun sendFrame(frameBytes: ByteArray): Boolean = mutex.withLock {
                 try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        server.notifyCharacteristicChanged(device, char, false, frameBytes) == BluetoothGatt.GATT_SUCCESS
-                    } else {
-                        @Suppress("DEPRECATION")
-                        char.value = frameBytes
-                        @Suppress("DEPRECATION")
-                        server.notifyCharacteristicChanged(device, char, false)
+                    val chunks = Chunker.chunk(frameBytes, maxChunkSize = 480)
+                    var allOk = true
+                    for (chunk in chunks) {
+                        val ok = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            server.notifyCharacteristicChanged(device, char, false, chunk) == BluetoothGatt.GATT_SUCCESS
+                        } else {
+                            @Suppress("DEPRECATION")
+                            char.value = chunk
+                            @Suppress("DEPRECATION")
+                            server.notifyCharacteristicChanged(device, char, false)
+                        }
+                        if (!ok) allOk = false
+                        if (chunks.size > 1) {
+                            delay(10)
+                        }
                     }
+                    allOk
                 } catch (t: Throwable) {
                     SecureLog.w(TAG, "Server sink sendFrame failed to $address: ${t.message}")
                     false

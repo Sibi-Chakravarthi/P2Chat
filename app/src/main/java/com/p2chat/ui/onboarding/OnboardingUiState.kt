@@ -12,7 +12,8 @@ sealed class OnboardingUiState {
         val formattedFingerprint: String,
         val qrBase64: String,
         val scannedPeer: Peer? = null,
-        val keyConflictWarning: String? = null
+        val keyConflictWarning: String? = null,
+        val joinedGroupName: String? = null
     ) : OnboardingUiState() {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -25,6 +26,7 @@ sealed class OnboardingUiState {
             if (qrBase64 != other.qrBase64) return false
             if (scannedPeer != other.scannedPeer) return false
             if (keyConflictWarning != other.keyConflictWarning) return false
+            if (joinedGroupName != other.joinedGroupName) return false
 
             return true
         }
@@ -35,6 +37,7 @@ sealed class OnboardingUiState {
             result = 31 * result + qrBase64.hashCode()
             result = 31 * result + (scannedPeer?.hashCode() ?: 0)
             result = 31 * result + (keyConflictWarning?.hashCode() ?: 0)
+            result = 31 * result + (joinedGroupName?.hashCode() ?: 0)
             return result
         }
     }

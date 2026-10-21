@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.p2chat.crypto.group.RosterCodec
 import com.p2chat.crypto.group.RosterMemberInfo
 import com.p2chat.crypto.group.SignedRoster
+import com.p2chat.crypto.invite.GroupInviteData
 import com.p2chat.crypto.invite.InvitePayload
 import com.p2chat.crypto.invite.InviteService
 import com.p2chat.crypto.invite.PairwiseChannel
@@ -29,6 +30,7 @@ import com.p2chat.util.SecureLog
 import com.p2chat.wire.BleConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -312,6 +314,22 @@ class GroupAdminViewModel(
         sendPipeline.sendControlFrames(listOf(invitePacket, rosterSyncPacket))
         SecureLog.d(TAG, "Invited ${qrPayload.alias} ($senderFp) to group $groupId (roster v$newRosterVersion)")
         _snackbarEvent.emit("Added ${qrPayload.alias} to group.")
+    }
+
+    suspend fun getGroupInviteData(): GroupInviteData? = withContext(Dispatchers.Default) {
+        val group = groupDao.getGroup(groupId) ?: return@withContext null
+        val identity = localIdentityDao.getIdentity() ?: return@withContext null
+        val groupKey = keyVault.unwrap(group.wrappedCurrentKey)
+        GroupInviteData(
+            groupId = group.groupId,
+            groupName = group.name,
+            groupKey = groupKey,
+            keyEpoch = group.currentEpoch,
+            adminFp = identity.senderFp,
+            adminSigningPub = identity.signingPub,
+            adminEcdhPub = identity.ecdhPub,
+            adminAlias = identity.alias
+        )
     }
 
     private fun buildSignedRoster(

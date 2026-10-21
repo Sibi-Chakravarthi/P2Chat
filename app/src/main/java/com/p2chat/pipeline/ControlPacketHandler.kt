@@ -75,7 +75,10 @@ class ControlPacketHandler(
 
         try {
             val identity = identityManager.getIdentity() ?: return
-            val adminPeer = peerDao.getPeer(header.senderFp) ?: return
+            val adminPeer = peerDao.getPeer(header.senderFp) ?: run {
+                SecureLog.w(TAG, "PAIRWISE_INVITE dropped: Admin ${header.senderFp} is not yet pinned in peerDao (requires mutual QR scan or group invite scan).")
+                return
+            }
             val ecdhPriv = identityManager.unwrapEcdhPrivateKey(identity)
             val pairwiseChannel = PairwiseChannel.derive(ecdhPriv, adminPeer.ecdhPub)
 

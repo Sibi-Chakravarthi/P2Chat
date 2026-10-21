@@ -673,7 +673,11 @@ private fun OnboardingContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "TOFU Verified: ${createdState.scannedPeer.alias}",
+                        text = if (createdState.joinedGroupName != null) {
+                            "Joined Group: ${createdState.joinedGroupName} (Admin: ${createdState.scannedPeer.alias})"
+                        } else {
+                            "TOFU Verified: ${createdState.scannedPeer.alias}"
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = VerifiedGreen,
                         fontWeight = FontWeight.Bold

@@ -160,7 +160,7 @@ class OnboardingViewModel(
                             members = listOf(adminMember, selfMember)
                         )
                     }
-                    updateCurrentStateWithScannedPeer(adminPeer, keyConflict = null)
+                    updateCurrentStateWithScannedPeer(adminPeer, keyConflict = null, joinedGroupName = invite.groupName)
                     return@launch
                 }
             }
@@ -207,12 +207,13 @@ class OnboardingViewModel(
         )
     }
 
-    private fun updateCurrentStateWithScannedPeer(peer: Peer, keyConflict: String?) {
+    private fun updateCurrentStateWithScannedPeer(peer: Peer, keyConflict: String?, joinedGroupName: String? = null) {
         val current = _uiState.value
         if (current is OnboardingUiState.Created) {
             _uiState.value = current.copy(
                 scannedPeer = peer,
-                keyConflictWarning = keyConflict
+                keyConflictWarning = keyConflict,
+                joinedGroupName = joinedGroupName
             )
         }
     }
