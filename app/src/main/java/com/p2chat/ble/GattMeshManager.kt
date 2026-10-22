@@ -252,6 +252,7 @@ class GattMeshManager(
                 if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
                     SecureLog.d(TAG, "GATT Client connected to $addr")
                     clientGattMap[addr] = gatt
+                    refreshGattCache(gatt)
 
                     // Sequence step 1: Request 517 MTU before service discovery (Bug 4)
                     val requested = gatt.requestMtu(517)
@@ -351,9 +352,26 @@ class GattMeshManager(
                 device.connectGatt(context, false, clientCallback)
             }
             clientGattMap[address] = gatt
+            refreshGattCache(gatt)
         } catch (t: Throwable) {
             SecureLog.e(TAG, "Exception initiating connectGatt to $address: ${t.message}")
             connectionPool.setConnectionState(address, PeerConnectionState.DISCONNECTED)
+        }
+    }
+
+    /**
+     * Clears Android's hidden internal GATT service cache using reflection on [BluetoothGatt.refresh] (Phase 3).
+     * Prevents the OS from caching outdated or stale GATT service/characteristic tables across connections.
+     */
+    fun refreshGattCache(gatt: BluetoothGatt): Boolean {
+        return try {
+            val refreshMethod = gatt.javaClass.getMethod("refresh")
+            val success = refreshMethod.invoke(gatt) as? Boolean ?: false
+            SecureLog.d(TAG, "GATT cache refresh for ${gatt.device?.address}: $success")
+            success
+        } catch (t: Throwable) {
+            SecureLog.w(TAG, "GATT cache refresh reflection failed: ${t.message}")
+            false
         }
     }
 

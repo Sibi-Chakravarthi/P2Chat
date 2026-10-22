@@ -29,6 +29,8 @@ data class FilterDiagnosis(
     val score: Float,
     val verdict: FilterVerdict
 ) {
+    val isToxic: Boolean
+        get() = verdict.isToxic || score > 0.65f
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is FilterDiagnosis) return false
@@ -152,7 +154,7 @@ class FilterService(
             val normalized = TextNormalizer.normalize(text)
 
             // Step 2: WordPiece tokenizer (AI-3, T3.7)
-            val tokenized = tokenizer.encode(normalized, maxLength = 128)
+            val tokenized = tokenizer.encode(normalized, maxLength = WordPieceTokenizer.MAX_SEQ_LEN)
 
             // Step 3: Quantized TFLite embedder with mutex (AI-4, T3.8)
             val embedding = embedder.embed(tokenized.tokenIds, tokenized.attentionMask)
@@ -191,6 +193,7 @@ class FilterService(
             }
 
             verdictCache[msgId] = verdict
+            SecureLog.d(TAG, "Filter classified msg $msgId: score=${scoreResult.sMax}, isToxic=${verdict.isToxic}")
             return@withContext verdict
         } catch (e: ModelUnavailable) {
             val verdict = FilterVerdict.NotScanned("Model unavailable during inference: ${e.message}")
@@ -228,7 +231,7 @@ class FilterService(
 
         val normalized = TextNormalizer.normalize(text)
         val basicTokens = tokenizer.basicTokenize(normalized)
-        val tokenized = tokenizer.encode(normalized, maxLength = 128)
+        val tokenized = tokenizer.encode(normalized, maxLength = WordPieceTokenizer.MAX_SEQ_LEN)
 
         val embedding = try {
             embedder.embed(tokenized.tokenIds, tokenized.attentionMask)

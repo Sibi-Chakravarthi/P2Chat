@@ -1,5 +1,6 @@
 package com.p2chat.ui.chat
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -85,6 +87,19 @@ fun ChatScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
 
+    // Handle back button to pop backstack instead of closing app (Issue 4)
+    BackHandler { onBackClick() }
+
+    // Reactively kick user out of ChatScreen if removed from group (Issue 1)
+    var initialGroupLoaded by remember { mutableStateOf(false) }
+    LaunchedEffect(group) {
+        if (group != null) {
+            initialGroupLoaded = true
+        } else if (initialGroupLoaded) {
+            onBackClick()
+        }
+    }
+
     var inputText by remember { mutableStateOf("") }
     val inputBytes = remember(inputText) { inputText.toByteArray(Charsets.UTF_8).size }
     val isOverLimit = inputBytes > MessageLimits.MAX_PLAINTEXT_BYTES
@@ -131,7 +146,7 @@ fun ChatScreen(
                 }
             )
         },
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.fillMaxSize().imePadding()
     ) { innerPadding ->
         Column(
             modifier = Modifier

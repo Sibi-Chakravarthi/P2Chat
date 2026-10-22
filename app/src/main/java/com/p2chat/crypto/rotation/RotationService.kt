@@ -37,7 +37,8 @@ data class MemberRemovalResult(
     val newGroupKey: ByteArray,
     val updatedRoster: SignedRoster,
     val keyRotatePackets: List<ByteArray>,
-    val rosterSyncPacket: ByteArray
+    val rosterSyncPacket: ByteArray,
+    val removeMemberPacket: ByteArray? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -53,6 +54,9 @@ data class MemberRemovalResult(
             if (!keyRotatePackets[i].contentEquals(other.keyRotatePackets[i])) return false
         }
         if (!rosterSyncPacket.contentEquals(other.rosterSyncPacket)) return false
+        if (removeMemberPacket != null) {
+            if (other.removeMemberPacket == null || !removeMemberPacket.contentEquals(other.removeMemberPacket)) return false
+        } else if (other.removeMemberPacket != null) return false
 
         return true
     }
@@ -63,7 +67,42 @@ data class MemberRemovalResult(
         result = 31 * result + updatedRoster.hashCode()
         result = 31 * result + keyRotatePackets.hashCode()
         result = 31 * result + rosterSyncPacket.contentHashCode()
+        result = 31 * result + (removeMemberPacket?.contentHashCode() ?: 0)
         return result
+    }
+}
+
+data class GroupRemoveMemberPayload(
+    val groupId: Long,
+    val removedSenderFp: Long,
+    val reason: String = "REMOVED_BY_ADMIN"
+) {
+    companion object {
+        fun serialize(sentAtMs: Long, payload: GroupRemoveMemberPayload): ByteArray {
+            val baos = ByteArrayOutputStream()
+            val dos = DataOutputStream(baos)
+            dos.writeLong(sentAtMs)
+            dos.writeInt((payload.groupId and 0xFFFFFFFFL).toInt())
+            dos.writeLong(payload.removedSenderFp)
+            val reasonBytes = payload.reason.toByteArray(Charsets.UTF_8)
+            dos.writeInt(reasonBytes.size)
+            dos.write(reasonBytes)
+            dos.flush()
+            return baos.toByteArray()
+        }
+
+        fun deserialize(bytes: ByteArray): Pair<Long, GroupRemoveMemberPayload> {
+            val bais = ByteArrayInputStream(bytes)
+            val dis = DataInputStream(bais)
+            val sentAtMs = dis.readLong()
+            val groupId = dis.readInt().toLong() and 0xFFFFFFFFL
+            val removedSenderFp = dis.readLong()
+            val reasonLen = dis.readInt()
+            val reasonBytes = ByteArray(reasonLen)
+            dis.readFully(reasonBytes)
+            val reason = String(reasonBytes, Charsets.UTF_8)
+            return Pair(sentAtMs, GroupRemoveMemberPayload(groupId, removedSenderFp, reason))
+        }
     }
 }
 
@@ -211,6 +250,20 @@ class RotationService(
             sentAtMs = nowMs
         )
 
+        // Build GROUP_REMOVE_MEMBER control packet targeted at the removed member
+        val removedMemberPairwise = PairwiseChannel.derive(adminEcdhPrivateKey, memberToRemove.ecdhPub)
+        val removePayload = GroupRemoveMemberPayload(
+            groupId = groupId,
+            removedSenderFp = removedSenderFp
+        )
+        val removePacket = buildGroupRemoveMemberPacket(
+            adminFp = adminIdentity.senderFp,
+            adminSigningPrivateKey = adminSigningPrivateKey,
+            removedMemberPairwiseChannel = removedMemberPairwise,
+            payload = removePayload,
+            sentAtMs = nowMs
+        )
+
         // If DAOs are available, persist changes
         if (groupDao != null) {
             val currentGroup = groupDao.getGroup(groupId)
@@ -237,7 +290,8 @@ class RotationService(
                 newGroupKey = newGroupKey,
                 updatedRoster = updatedRoster,
                 keyRotatePackets = keyRotatePackets,
-                rosterSyncPacket = rosterSyncPacket
+                rosterSyncPacket = rosterSyncPacket,
+                removeMemberPacket = removePacket
             )
         )
     }
@@ -533,6 +587,85 @@ class RotationService(
             }
 
             return ProcessRotationResult(newEpochState, decryptedPackets)
+        }
+
+        /**
+         * Builds a GROUP_REMOVE_MEMBER packet targeted at a removed member, encrypted with
+         * their pairwise channel and signed by the group admin.
+         */
+        fun buildGroupRemoveMemberPacket(
+            adminFp: Long,
+            adminSigningPrivateKey: PrivateKey,
+            removedMemberPairwiseChannel: PairwiseChannel,
+            payload: GroupRemoveMemberPayload,
+            sentAtMs: Long,
+            msgId: Long = ThreadLocalRandom.current().nextLong()
+        ): ByteArray {
+            val innerPayload = GroupRemoveMemberPayload.serialize(sentAtMs, payload)
+
+            val header = PacketHeader(
+                packetType = PacketType.GROUP_REMOVE_MEMBER,
+                ttl = BleConstants.DEFAULT_TTL,
+                msgId = msgId,
+                groupId = payload.groupId,
+                senderFp = adminFp,
+                keyEpoch = 1
+            )
+
+            val aad = header.computeAad()
+            val sealed = removedMemberPairwiseChannel.seal(innerPayload, aad)
+
+            val coreBlob = CoreBlob(sealed.nonce, sealed.tag, sealed.ciphertext)
+            val signedData = aad + coreBlob.encode()
+            val signature = Ecdsa.sign(adminSigningPrivateKey, signedData)
+
+            val frame = WireFrame(header, coreBlob, signature)
+            return WireCodec.encode(frame)
+        }
+
+        /**
+         * Opens and verifies a GROUP_REMOVE_MEMBER packet.
+         * Enforces strict admin signature verification before attempting pairwise decryption.
+         */
+        fun openGroupRemoveMemberPacket(
+            frameBytes: ByteArray,
+            adminSigningPubkey: ByteArray,
+            removedMemberPairwiseChannel: PairwiseChannel
+        ): Result<Pair<PacketHeader, GroupRemoveMemberPayload>> {
+            val wireFrame = WireCodec.decode(frameBytes).getOrElse { return Result.failure(it) }
+            if (wireFrame.header.packetType != PacketType.GROUP_REMOVE_MEMBER) {
+                return Result.failure(
+                    IllegalArgumentException("Expected GROUP_REMOVE_MEMBER packet, got ${wireFrame.header.packetType}")
+                )
+            }
+
+            val aad = wireFrame.header.computeAad()
+            val coreBlobBytes = wireFrame.coreBlob.encode()
+            val signedData = aad + coreBlobBytes
+
+            val sigValid = Ecdsa.verify(adminSigningPubkey, signedData, wireFrame.signature)
+            if (!sigValid) {
+                return Result.failure(CryptoError.BadSignature("Invalid admin signature on GROUP_REMOVE_MEMBER packet"))
+            }
+
+            val openResult = removedMemberPairwiseChannel.open(
+                nonce = wireFrame.coreBlob.nonce,
+                ciphertext = wireFrame.coreBlob.ciphertext,
+                tag = wireFrame.coreBlob.tag,
+                aad = aad
+            )
+
+            if (openResult.isFailure) {
+                return Result.failure(openResult.exceptionOrNull()!!)
+            }
+
+            val decryptedPayload = openResult.getOrThrow()
+            return try {
+                val (_, removePayload) = GroupRemoveMemberPayload.deserialize(decryptedPayload)
+                Result.success(Pair(wireFrame.header, removePayload))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         }
     }
 }

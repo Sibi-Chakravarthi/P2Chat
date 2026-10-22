@@ -33,22 +33,28 @@ ZERO_WIDTH_CHARS = [
 ]
 ZERO_WIDTH_PATTERN = re.compile("[" + "".join(ZERO_WIDTH_CHARS) + "]")
 
+# Mask characters (*, #) commonly used to obfuscate profanity
+MASK_CHARS_PATTERN = re.compile(r"[*#]")
+
 # Character runs of length > 2 collapsed to 2 (e.g., 'heeeelp' -> 'heelp')
 RUNS_PATTERN = re.compile(r"(.)\1{2,}")
 
-# Leetspeak bounded by ASCII letters on both sides
-LEET_AT_PATTERN = re.compile(r"(?<=[a-zA-Z])@(?=[a-zA-Z])")
-LEET_ONE_EXCL_PATTERN = re.compile(r"(?<=[a-zA-Z])[1!](?=[a-zA-Z])")
-LEET_DOLLAR_PATTERN = re.compile(r"(?<=[a-zA-Z])\$(?=[a-zA-Z])")
-LEET_ZERO_PATTERN = re.compile(r"(?<=[a-zA-Z])0(?=[a-zA-Z])")
+# Leetspeak bounded by lowercase ASCII letters on both sides (applied after lowercasing)
+LEET_AT_PATTERN = re.compile(r"(?<=[a-z])@(?=[a-z])")
+LEET_ONE_EXCL_PATTERN = re.compile(r"(?<=[a-z])[1!](?=[a-z])")
+LEET_DOLLAR_PATTERN = re.compile(r"(?<=[a-z])\$(?=[a-z])")
+LEET_ZERO_PATTERN = re.compile(r"(?<=[a-z])0(?=[a-z])")
+LEET_THREE_PATTERN = re.compile(r"(?<=[a-z])3(?=[a-z]|\b)")
 
 
 def normalize_text(text: str) -> str:
     """
     Normalizes text according to P2Chat AI-2 requirements:
     1. Strip zero-width characters.
-    2. Collapse character repetitions > 2 to 2.
-    3. Replace leetspeak symbols (@->a, 1/!->i, $->s, 0->o) ONLY when bounded by letters.
+    2. Convert to lowercase for case-insensitive matching.
+    3. Strip mask characters (* and #) used to obfuscate profanity.
+    4. Collapse character repetitions > 2 to 2.
+    5. Replace leetspeak symbols (@->a, 1/!->i, $->s, 0->o, 3->e) ONLY when bounded by letters.
     """
     if not text:
         return ""
@@ -56,14 +62,21 @@ def normalize_text(text: str) -> str:
     # Step 1: Strip zero-width characters
     res = ZERO_WIDTH_PATTERN.sub("", text)
 
-    # Step 2: Collapse runs of > 2 identical characters to 2
+    # Step 2: Convert to lowercase
+    res = res.lower()
+
+    # Step 3: Strip mask characters
+    res = MASK_CHARS_PATTERN.sub("", res)
+
+    # Step 4: Collapse runs of > 2 identical characters to 2
     res = RUNS_PATTERN.sub(r"\1\1", res)
 
-    # Step 3: Bounded leetspeak substitution (must have letter on both sides)
+    # Step 5: Bounded leetspeak substitution (must have letter on both sides)
     res = LEET_AT_PATTERN.sub("a", res)
     res = LEET_ONE_EXCL_PATTERN.sub("i", res)
     res = LEET_DOLLAR_PATTERN.sub("s", res)
     res = LEET_ZERO_PATTERN.sub("o", res)
+    res = LEET_THREE_PATTERN.sub("e", res)
 
     return res
 

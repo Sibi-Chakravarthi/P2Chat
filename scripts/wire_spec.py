@@ -18,6 +18,7 @@ PACKET_TYPE_ROSTER_SYNC: int = 0x03
 PACKET_TYPE_PAIRWISE_INVITE: int = 0x04
 PACKET_TYPE_BENCH_DATA: int = 0x05
 PACKET_TYPE_BENCH_ACK: int = 0x06
+PACKET_TYPE_GROUP_REMOVE_MEMBER: int = 0x07
 
 # ── Transport Framing Header (4 bytes, D-17) ────────────────────────────────
 TRANSPORT_HEADER_SIZE_BYTES: int = 4

@@ -11,6 +11,12 @@ sealed class FilterVerdict {
     abstract val isBlurred: Boolean
 
     /**
+     * Clean boolean mapping for UI display (e.g. isToxic = score > 0.65f or flagged tier).
+     */
+    val isToxic: Boolean
+        get() = this is Tier1Quarantine || this is Tier2Warning || score > 0.65f
+
+    /**
      * Tier 1 (Quarantine): s_max >= tau_block or forced blocked vector match (AI-7, AI-9).
      * Withheld from chat feed and placed in quarantine table.
      */

@@ -82,7 +82,7 @@ class ReceivePipeline(
         // 3. Group membership check (SEC-2, NET-10)
         val group = groupDao.getGroup(header.groupId)
         if (group == null) {
-            if (header.packetType == PacketType.PAIRWISE_INVITE) {
+            if (header.packetType == PacketType.PAIRWISE_INVITE || header.packetType == PacketType.GROUP_REMOVE_MEMBER) {
                 controlPacketHandler.handleControlPacket(
                     PacketVerdict.Accept(
                         header = header,
@@ -93,6 +93,17 @@ class ReceivePipeline(
                 )
             }
             return@withContext PacketVerdict.NotMemberOpaque
+        }
+
+        // Pairwise-sealed control packets are processed directly by ControlPacketHandler
+        if (header.packetType == PacketType.GROUP_REMOVE_MEMBER) {
+            val verdict = PacketVerdict.Accept(
+                header = header,
+                sentAtMs = clock.currentTimeMillis(),
+                plaintext = ""
+            )
+            controlPacketHandler.handleControlPacket(verdict, frameBytes)
+            return@withContext verdict
         }
 
         // 4. Epoch evaluation (SEC-12, SEC-13)
@@ -169,7 +180,7 @@ class ReceivePipeline(
                 return@withContext verdict
             }
 
-            PacketType.KEY_ROTATE, PacketType.ROSTER_SYNC, PacketType.PAIRWISE_INVITE -> {
+            PacketType.KEY_ROTATE, PacketType.ROSTER_SYNC, PacketType.PAIRWISE_INVITE, PacketType.GROUP_REMOVE_MEMBER -> {
                 controlPacketHandler.handleControlPacket(verdict, frameBytes)
                 return@withContext verdict
             }

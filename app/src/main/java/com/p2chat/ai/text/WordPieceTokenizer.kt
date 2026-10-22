@@ -37,6 +37,7 @@ data class TokenizedInput(
 class WordPieceTokenizer(private val vocab: Map<String, Int>) {
 
     companion object {
+        const val MAX_SEQ_LEN = 128
         const val MAX_SEQUENCE_LENGTH = 128
         const val CLS_TOKEN = "[CLS]"
         const val SEP_TOKEN = "[SEP]"
@@ -51,6 +52,14 @@ class WordPieceTokenizer(private val vocab: Map<String, Int>) {
         fun fromInputStream(stream: InputStream): WordPieceTokenizer {
             val vocab = VocabLoader.loadVocab(stream)
             return WordPieceTokenizer(vocab)
+        }
+
+        /**
+         * Strict string preprocessing step before tokenization (Phase 2 fix):
+         * Lowercases text and strips all non-alphanumeric and non-space characters.
+         */
+        fun preprocess(text: String): String {
+            return text.lowercase().replace(Regex("[^a-z0-9 ]"), "")
         }
 
         private fun isControlCp(cp: Int): Boolean {

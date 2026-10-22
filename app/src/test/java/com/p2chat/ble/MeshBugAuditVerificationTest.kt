@@ -172,4 +172,18 @@ class MeshBugAuditVerificationTest {
         assertNotNull(result)
         assertEquals(60, result!!.size)
     }
+
+    // ── Phase 3: BLE Scanner Watchdog Configuration ───────────────────────────
+
+    @Test
+    fun testScannerWatchdog_intervalIsWithin12To15Seconds() {
+        assertTrue(
+            "Watchdog interval must be >= 12,000ms to cycle scanner and prevent Android BLE throttling",
+            AndroidMeshScanner.WATCHDOG_INTERVAL_MS >= 12_000L
+        )
+        assertTrue(
+            "Watchdog interval must be <= 15,000ms to cycle scanner and prevent Android BLE throttling",
+            AndroidMeshScanner.WATCHDOG_INTERVAL_MS <= 15_000L
+        )
+    }
 }

@@ -41,14 +41,29 @@ class DefaultMeshScanner : MeshScanner {
 
     override fun updatePeer(peer: DiscoveredPeer) {
         // Handle MAC address rotation: if senderFp matches an existing peer with a different address,
-        // prune the old MAC address entry to prevent duplicate peers in UI.
+        // prune the old MAC address entry to prevent duplicate ghost nodes in UI (Issue 3).
         if (peer.senderFp != null) {
             val staleEntry = peersMap.entries.firstOrNull { it.value.senderFp == peer.senderFp && it.key != peer.address }
             if (staleEntry != null) {
                 peersMap.remove(staleEntry.key)
             }
         }
-        peersMap[peer.address] = peer
+        val existing = peersMap[peer.address]
+        val updated = if (existing != null) {
+            existing.copy(
+                alias = peer.alias ?: existing.alias,
+                senderFp = peer.senderFp ?: existing.senderFp,
+                rssi = peer.rssi,
+                lastSeenMs = peer.lastSeenMs,
+                mtu = if (peer.mtu != 517) peer.mtu else existing.mtu,
+                connectionState = peer.connectionState,
+                isVerified = peer.isVerified || existing.isVerified,
+                roleDescription = peer.roleDescription ?: existing.roleDescription
+            )
+        } else {
+            peer
+        }
+        peersMap[peer.address] = updated
         _discoveredPeers.value = peersMap.values.toList().sortedByDescending { it.rssi }
     }
 

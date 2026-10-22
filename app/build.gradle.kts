@@ -82,6 +82,9 @@ dependencies {
     // Cryptography
     implementation(libs.bouncycastle.prov)
 
+    // AndroidX Graphics Path (16 KB page size support)
+    implementation(libs.androidx.graphics.path)
+
     // On-Device AI
     implementation(libs.tensorflow.lite)
 

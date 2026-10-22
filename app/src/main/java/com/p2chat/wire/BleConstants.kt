@@ -19,6 +19,7 @@ object BleConstants {
     const val PACKET_TYPE_PAIRWISE_INVITE: Byte = 0x04
     const val PACKET_TYPE_BENCH_DATA: Byte = 0x05
     const val PACKET_TYPE_BENCH_ACK: Byte = 0x06
+    const val PACKET_TYPE_GROUP_REMOVE_MEMBER: Byte = 0x07
 
     // ── Transport Framing Header (4 bytes, D-17) ────────────────────────────
     const val TRANSPORT_HEADER_SIZE_BYTES: Int = 4

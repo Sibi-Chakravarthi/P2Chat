@@ -50,6 +50,7 @@ class TfliteEmbedder(
     companion object {
         const val DEFAULT_MODEL_ASSET = "all-MiniLM-L6-v2-quant.tflite"
         const val EMBEDDING_DIM = 384
+        const val MAX_SEQ_LEN = 128
         const val MAX_SEQUENCE_LENGTH = 128
         private const val TAG = "TfliteEmbedder"
 
@@ -215,6 +216,7 @@ class TfliteEmbedder(
 
             // AI-5: L2 normalize
             val norm = sqrt(rawVector.fold(0.0) { acc, v -> acc + (v * v) }).toFloat()
+            SecureLog.d(TAG, "Interpreter raw vector sample: [${rawVector.take(5).joinToString(", ")}], norm=$norm")
             val result = if (norm > 1e-9f) {
                 FloatArray(EMBEDDING_DIM) { rawVector[it] / norm }
             } else {

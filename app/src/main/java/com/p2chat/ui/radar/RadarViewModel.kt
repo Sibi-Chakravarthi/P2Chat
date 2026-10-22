@@ -45,6 +45,7 @@ data class RadarUiState(
     val isMeshActive: Boolean = true,
     val isBeaconActive: Boolean = true,
     val isScanning: Boolean = true,
+    val peersMap: Map<String, DiscoveredPeerUiModel> = emptyMap(),
     val peers: List<DiscoveredPeerUiModel> = emptyList(),
     val bufferOccupancy: Int = 0,
     val bufferMax: Int = 1000,
@@ -94,7 +95,8 @@ class RadarViewModel(
         meshScanner.discoveredPeers,
         connectionPool.connectionStates
     ) { rawPeers, connStates ->
-        rawPeers.map { peer ->
+        val map = LinkedHashMap<String, DiscoveredPeerUiModel>()
+        rawPeers.forEach { peer ->
             val connState = connStates[peer.address] ?: peer.connectionState
             val roleDesc = peer.roleDescription ?: when (connState) {
                 PeerConnectionState.CONNECTED -> "1-Hop direct"
@@ -103,35 +105,42 @@ class RadarViewModel(
                 PeerConnectionState.DISCONNECTED -> if (peer.isVerified) "Direct link" else "Raw AD packet"
             }
 
-            DiscoveredPeerUiModel(
-                address = peer.address,
-                alias = peer.displayAlias,
-                shortTag = peer.shortTag,
-                rssi = peer.rssi,
-                signalBars = peer.signalBars,
-                connectionState = connState,
-                mtu = peer.mtu,
-                isVerified = peer.isVerified,
-                roleDescription = roleDesc,
-                lastSeenMs = peer.lastSeenMs
-            )
+            val persistentKey = peer.senderFp?.toString() ?: peer.address
+            val existing = map[persistentKey]
+            if (existing == null || peer.lastSeenMs >= existing.lastSeenMs) {
+                map[persistentKey] = DiscoveredPeerUiModel(
+                    address = peer.address,
+                    alias = peer.displayAlias,
+                    shortTag = peer.shortTag,
+                    rssi = peer.rssi,
+                    signalBars = peer.signalBars,
+                    connectionState = connState,
+                    mtu = peer.mtu,
+                    isVerified = peer.isVerified,
+                    roleDescription = roleDesc,
+                    lastSeenMs = peer.lastSeenMs
+                )
+            }
         }
+        map
     }
 
     val uiState: StateFlow<RadarUiState> = combine(
         radioStateFlow,
         peerModelsFlow,
         bufferedPacketDao.observeBufferCount()
-    ) { radio, peerModels, bufferCount ->
+    ) { radio, peerMap, bufferCount ->
         val occupancy = bufferCount.coerceIn(0, 1000)
         val percent = (occupancy.toFloat() / 1000f) * 100f
         val cachedKb = (occupancy.toLong() * 350L) / 1024L
+        val peerList = peerMap.values.toList().sortedByDescending { it.rssi }
 
         RadarUiState(
             isMeshActive = radio.isMeshActive,
             isBeaconActive = radio.isBeaconActive,
             isScanning = radio.isScanning && radio.isMeshActive,
-            peers = peerModels,
+            peersMap = peerMap,
+            peers = peerList,
             bufferOccupancy = occupancy,
             bufferMax = 1000,
             bufferPercent = percent,

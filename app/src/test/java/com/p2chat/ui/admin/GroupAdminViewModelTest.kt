@@ -363,8 +363,8 @@ class GroupAdminViewModelTest {
         assertNotNull(m2)
         assertTrue("Removed member must be revoked", m2!!.revoked)
 
-        // 3. Control packets queued in packet_buffer (1 KEY_ROTATE + 1 ROSTER_SYNC)
-        assertEquals(2, bufferedPacketDao.countBuffer())
+        // 3. Control packets queued in packet_buffer (1 KEY_ROTATE + 1 ROSTER_SYNC + 1 GROUP_REMOVE_MEMBER)
+        assertEquals(3, bufferedPacketDao.countBuffer())
     }
 
     @Test

@@ -42,6 +42,9 @@ androidx-room-compiler = { group = "androidx.room", name = "room-compiler", vers
 # Cryptography & Security
 bouncycastle-prov = { group = "org.bouncycastle", name = "bcprov-jdk18on", version.ref = "bouncycastle" }
 
+# Graphics Path (16 KB page size support)
+androidx-graphics-path = { group = "androidx.graphics", name = "graphics-path", version = "1.0.1" }
+
 # On-Device AI
 tensorflow-lite = { group = "org.tensorflow", name = "tensorflow-lite", version.ref = "tflite" }
 

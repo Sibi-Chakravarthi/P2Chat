@@ -1,5 +1,6 @@
 package com.p2chat.ui.admin
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -124,6 +125,18 @@ fun GroupAdminScreen(
     LaunchedEffect(Unit) {
         viewModel.snackbarEvent.collectLatest { msg ->
             snackbarHostState.showSnackbar(msg)
+        }
+    }
+
+    BackHandler {
+        if (showScanner) {
+            showScanner = false
+        } else if (showInviteQrDialog) {
+            showInviteQrDialog = false
+        } else if (memberToRemove != null) {
+            memberToRemove = null
+        } else {
+            onBackClick()
         }
     }
 

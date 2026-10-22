@@ -1,5 +1,6 @@
 package com.p2chat.ui.onboarding
 
+import androidx.activity.compose.BackHandler
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -92,6 +93,7 @@ fun OnboardingScreen(
     var showScanner by remember { mutableStateOf(false) }
 
     if (showScanner) {
+        BackHandler { showScanner = false }
         QrScannerScreen(
             onQrScanned = { rawQr ->
                 viewModel.processScannedQr(rawQr)
@@ -100,6 +102,10 @@ fun OnboardingScreen(
             onClose = { showScanner = false }
         )
         return
+    }
+
+    if (isProfileMode && onBackClick != null) {
+        BackHandler { onBackClick() }
     }
 
     when (val state = uiState) {

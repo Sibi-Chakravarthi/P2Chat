@@ -6,7 +6,8 @@ enum class PacketType(val code: Byte) {
     ROSTER_SYNC(BleConstants.PACKET_TYPE_ROSTER_SYNC),
     PAIRWISE_INVITE(BleConstants.PACKET_TYPE_PAIRWISE_INVITE),
     BENCH_DATA(BleConstants.PACKET_TYPE_BENCH_DATA),
-    BENCH_ACK(BleConstants.PACKET_TYPE_BENCH_ACK);
+    BENCH_ACK(BleConstants.PACKET_TYPE_BENCH_ACK),
+    GROUP_REMOVE_MEMBER(BleConstants.PACKET_TYPE_GROUP_REMOVE_MEMBER);
 
     companion object {
         fun fromCode(code: Byte): PacketType? = entries.firstOrNull { it.code == code }

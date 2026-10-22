@@ -50,6 +50,27 @@ class TextNormalizerTest {
         assertEquals("darkness", TextNormalizer.normalize("d@rkness"))
         assertEquals("cold night", TextNormalizer.normalize("c0ld night"))
         assertEquals("c00l music", TextNormalizer.normalize("c00l music")) // 00 not bounded by letters on both sides
+        // Phase 3: 3->e bounded leetspeak
+        assertEquals("freedom", TextNormalizer.normalize("fr3edom"))
+        assertEquals("hoe", TextNormalizer.normalize("ho3"))
+        assertEquals("bitch", TextNormalizer.normalize("b!tch"))
+    }
+
+    @Test
+    fun testPhase3ObfuscationAndMaskStripping() {
+        // Asterisk and hash mask removal
+        assertEquals("puy", TextNormalizer.normalize("pu**y"))
+        assertEquals("sht", TextNormalizer.normalize("sh#t"))
+        assertEquals("fk", TextNormalizer.normalize("f**k"))
+        assertEquals("bitch", TextNormalizer.normalize("b!tch"))
+        assertEquals("hoe", TextNormalizer.normalize("ho3"))
+        assertEquals("bad bitch", TextNormalizer.normalize("B@D B!TCH"))
+        assertEquals("they are coming", TextNormalizer.normalize("th3y are coming"))
+
+        // normalizeText alias parity
+        assertEquals(TextNormalizer.normalize("pu**y"), TextNormalizer.normalizeText("pu**y"))
+        assertEquals(TextNormalizer.normalize("ho3"), TextNormalizer.normalizeText("ho3"))
+        assertEquals(TextNormalizer.normalize("b!tch"), TextNormalizer.normalizeText("b!tch"))
     }
 
     @Test

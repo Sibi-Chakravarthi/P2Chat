@@ -66,6 +66,12 @@ def build_fixture_inputs() -> list[str]:
         "f00d delivery arriving",
         "l!fe is beautiful",
         "s0ng of freedom",
+        # Phase 3: 3->e bounded leetspeak
+        "fr3edom is important",
+        "th3y are coming now",
+        "hat3 speech must stop",
+        "liv3s matter always",
+        "lov3 and r3spect",
     ]
 
     # 3. Repeated character collapse strings (>2 chars collapsed to 2, e.g. heeeelp -> heelp, good/see unchanged)
@@ -174,6 +180,20 @@ def build_fixture_inputs() -> list[str]:
         long_text,
     ]
 
+    # 9. Phase 3: Mask character obfuscation strings (* and # used to hide profanity)
+    mask_strings = [
+        "f**k you",
+        "sh#t happens here",
+        "what the f***",
+        "a**hole spotted",
+        "b#tch please",
+        "pu**y cat joke",
+        "clean message no masks",
+        "3 items at $5 each",
+        "ho3 garden tool",
+        "B@D B!TCH 3V3R",
+    ]
+
     all_inputs = (
         unchanged_strings
         + leetspeak_strings
@@ -183,6 +203,7 @@ def build_fixture_inputs() -> list[str]:
         + emoji_strings
         + plain_strings
         + edge_strings
+        + mask_strings
     )
 
     return all_inputs

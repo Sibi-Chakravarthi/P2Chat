@@ -42,6 +42,7 @@ class AndroidMeshScanner(
         private const val TAG = "AndroidMeshScanner"
         const val STALE_PEER_TIMEOUT_MS = 30_000L
         const val PRUNE_INTERVAL_MS = 10_000L
+        const val WATCHDOG_INTERVAL_MS = 13_000L // 12-15 seconds to prevent Android BLE scan throttling
     }
 
     private val targetUuid = ParcelUuid.fromString(BleConstants.SERVICE_UUID)
@@ -57,6 +58,7 @@ class AndroidMeshScanner(
 
     private var scanner: BluetoothLeScanner? = null
     private var pruneJob: Job? = null
+    private var watchdogJob: Job? = null
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult?) {
@@ -86,28 +88,46 @@ class AndroidMeshScanner(
                     null
                 }
 
-                // Handle MAC address randomization: if remoteSenderFp matches an existing peer with a different MAC address,
-                // prune the old MAC address so we do not display duplicate peers in the UI.
-                if (remoteSenderFp != null) {
-                    val staleEntry = peersMap.entries.firstOrNull { it.value.senderFp == remoteSenderFp && it.key != address }
-                    if (staleEntry != null) {
-                        peersMap.remove(staleEntry.key)
-                    }
+                // Check if device already exists in the local collection (Issue 3: Ghost Nodes fix):
+                // 1. By persistent remoteSenderFp (handles RPA MAC address rotation)
+                // 2. By MAC address
+                // 3. By matching device name/alias if present
+                val existingEntry = when {
+                    remoteSenderFp != null -> peersMap.entries.firstOrNull { it.value.senderFp == remoteSenderFp || it.key == address }
+                    deviceName != null && deviceName.isNotBlank() -> peersMap.entries.firstOrNull { it.key == address || it.value.alias == deviceName }
+                    else -> peersMap.entries.firstOrNull { it.key == address }
                 }
 
-                val existing = peersMap[address]
+                val existing = existingEntry?.value
+
+                // If existing entry had a different MAC address because of RPA rotation, remove the stale key
+                if (existingEntry != null && existingEntry.key != address) {
+                    peersMap.remove(existingEntry.key)
+                }
+
                 val senderFp = remoteSenderFp ?: existing?.senderFp
-                val peer = DiscoveredPeer(
-                    address = address,
-                    alias = deviceName ?: existing?.alias,
-                    senderFp = senderFp,
-                    rssi = result.rssi,
-                    lastSeenMs = System.currentTimeMillis(),
-                    mtu = existing?.mtu ?: 517,
-                    connectionState = existing?.connectionState ?: PeerConnectionState.DISCONNECTED,
-                    isVerified = existing?.isVerified ?: false,
-                    roleDescription = existing?.roleDescription ?: "1-Hop direct"
-                )
+                val peer = if (existing != null) {
+                    // Update its lastSeen timestamp and RSSI rather than adding a new entry
+                    existing.copy(
+                        address = address,
+                        alias = deviceName ?: existing.alias,
+                        senderFp = senderFp,
+                        rssi = result.rssi,
+                        lastSeenMs = System.currentTimeMillis()
+                    )
+                } else {
+                    DiscoveredPeer(
+                        address = address,
+                        alias = deviceName,
+                        senderFp = senderFp,
+                        rssi = result.rssi,
+                        lastSeenMs = System.currentTimeMillis(),
+                        mtu = 517,
+                        connectionState = PeerConnectionState.DISCONNECTED,
+                        isVerified = false,
+                        roleDescription = "1-Hop direct"
+                    )
+                }
 
                 updatePeer(peer)
                 onPeerDiscovered?.invoke(peer, result.device)
@@ -129,7 +149,22 @@ class AndroidMeshScanner(
             SecureLog.e(TAG, "BLE scan failed: $reason")
             _scanFailureReason.value = reason
             _isScanning.value = false
+            stopWatchdog()
+            stopPruneTimer()
         }
+    }
+
+    /**
+     * Builds aggressive scan settings for real-time BLE mesh peer discovery (NET-2, Phase 3).
+     * Prevents batching and ensures immediate dispatch of all advertising packets.
+     */
+    fun buildScanSettings(): ScanSettings {
+        return ScanSettings.Builder()
+            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
+            .setNumOfMatches(ScanSettings.MATCH_NUM_MAX_ADVERTISEMENT)
+            .setReportDelay(0L)
+            .build()
     }
 
     @SuppressLint("MissingPermission")
@@ -153,9 +188,7 @@ class AndroidMeshScanner(
             return
         }
 
-        val settings = ScanSettings.Builder()
-            .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
-            .build()
+        val settings = buildScanSettings()
 
         try {
             // Using emptyList<ScanFilter>() avoids hardware filter truncation and OEM 128-bit UUID matching bugs.
@@ -166,11 +199,14 @@ class AndroidMeshScanner(
             _isScanning.value = true
             _scanFailureReason.value = null
             startPruneTimer()
-            SecureLog.d(TAG, "BLE scanner started (mode: LOW_LATENCY)")
+            startWatchdog()
+            SecureLog.d(TAG, "BLE scanner started (mode: LOW_LATENCY, AGGRESSIVE, MAX_MATCHES)")
         } catch (t: Throwable) {
             _scanFailureReason.value = t.message
             SecureLog.e(TAG, "Exception starting BLE scan: ${t.message}")
             _isScanning.value = false
+            stopWatchdog()
+            stopPruneTimer()
         }
     }
 
@@ -186,6 +222,7 @@ class AndroidMeshScanner(
             _isScanning.value = false
             _scanFailureReason.value = null
             stopPruneTimer()
+            stopWatchdog()
         }
     }
 
@@ -238,5 +275,48 @@ class AndroidMeshScanner(
     private fun stopPruneTimer() {
         pruneJob?.cancel()
         pruneJob = null
+    }
+
+    private fun startWatchdog() {
+        watchdogJob?.cancel()
+        watchdogJob = coroutineScope.launch {
+            while (isActive) {
+                delay(WATCHDOG_INTERVAL_MS)
+                restartScanInternal()
+            }
+        }
+    }
+
+    private fun stopWatchdog() {
+        watchdogJob?.cancel()
+        watchdogJob = null
+    }
+
+    /**
+     * Periodically cycles the BLE scanner (NET-2, Phase 3).
+     * Stops and immediately restarts startScan to reset Android's internal
+     * 30-minute and long-running BLE scan throttling timers, preventing silent packet drops.
+     */
+    @SuppressLint("MissingPermission")
+    fun restartScanInternal() {
+        if (!_isScanning.value) return
+        val currentScanner = scanner ?: return
+        try {
+            currentScanner.stopScan(scanCallback)
+            SecureLog.d(TAG, "Watchdog: BLE scan stopped for cycle")
+        } catch (t: Throwable) {
+            SecureLog.w(TAG, "Watchdog: error stopping BLE scan during cycle: ${t.message}")
+        }
+
+        if (!_isScanning.value) return
+
+        try {
+            val settings = buildScanSettings()
+            val filters = emptyList<ScanFilter>()
+            currentScanner.startScan(filters, settings, scanCallback)
+            SecureLog.d(TAG, "Watchdog: BLE scan restarted successfully (mode: LOW_LATENCY, AGGRESSIVE)")
+        } catch (t: Throwable) {
+            SecureLog.e(TAG, "Watchdog: error restarting BLE scan during cycle: ${t.message}")
+        }
     }
 }

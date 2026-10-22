@@ -152,7 +152,7 @@ class GroupAdminViewModel(
 
         result.fold(
             onSuccess = { removalResult ->
-                val frames = removalResult.keyRotatePackets + removalResult.rosterSyncPacket
+                val frames = removalResult.keyRotatePackets + removalResult.rosterSyncPacket + listOfNotNull(removalResult.removeMemberPacket)
                 sendPipeline.sendControlFrames(frames)
                 SecureLog.d(TAG, "Removed member $removedSenderFp; rotated to epoch ${removalResult.newEpoch} with ${frames.size} control packets")
                 _snackbarEvent.emit("Member removed. Key rotated to Epoch ${removalResult.newEpoch} for forward secrecy.")

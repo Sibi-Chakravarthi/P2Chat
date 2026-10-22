@@ -2,8 +2,10 @@ package com.p2chat.ui
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,6 +91,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         val database = AppDatabase.getInstance(this)
         val keyVault = KeyVault()
@@ -165,7 +168,8 @@ class MainActivity : ComponentActivity() {
             },
             identityManager = identityManager,
             peerDao = peerDao,
-            groupManager = groupManager
+            groupManager = groupManager,
+            messageDao = messageDao
         )
 
         val receivePipeline = ReceivePipeline(
@@ -340,7 +344,18 @@ fun P2ChatAppShell(
         groupListViewModel.setBleState(effectiveState)
     }
 
+    val allGroups by database.groupDao().observeAllGroups().collectAsState(initial = emptyList())
+    LaunchedEffect(selectedGroupId, allGroups) {
+        val currentGid = selectedGroupId
+        if (currentGid != null && allGroups.none { it.groupId == currentGid }) {
+            selectedGroupId = null
+            showGroupAdmin = false
+        }
+    }
+
+    // Handle back button to pop backstack instead of closing app (Issue 4)
     if (showIdentityProfile) {
+        BackHandler { showIdentityProfile = false }
         OnboardingScreen(
             viewModel = onboardingViewModel,
             onOnboardingComplete = { showIdentityProfile = false },
@@ -349,6 +364,16 @@ fun P2ChatAppShell(
             modifier = modifier
         )
         return
+    }
+
+    if (selectedGroupId != null) {
+        if (showGroupAdmin) {
+            BackHandler { showGroupAdmin = false }
+        } else {
+            BackHandler { selectedGroupId = null }
+        }
+    } else if (currentTab != NavigationDestination.CHATS) {
+        BackHandler { currentTab = NavigationDestination.CHATS }
     }
 
     Scaffold(
