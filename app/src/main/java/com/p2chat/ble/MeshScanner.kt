@@ -16,6 +16,7 @@ interface MeshScanner {
     fun stopScan()
     fun updatePeer(peer: DiscoveredPeer)
     fun removePeer(address: String)
+    fun purgeStalePeers(maxAgeMs: Long = 30_000L)
     fun clear()
 }
 
@@ -39,6 +40,14 @@ class DefaultMeshScanner : MeshScanner {
     }
 
     override fun updatePeer(peer: DiscoveredPeer) {
+        // Handle MAC address rotation: if senderFp matches an existing peer with a different address,
+        // prune the old MAC address entry to prevent duplicate peers in UI.
+        if (peer.senderFp != null) {
+            val staleEntry = peersMap.entries.firstOrNull { it.value.senderFp == peer.senderFp && it.key != peer.address }
+            if (staleEntry != null) {
+                peersMap.remove(staleEntry.key)
+            }
+        }
         peersMap[peer.address] = peer
         _discoveredPeers.value = peersMap.values.toList().sortedByDescending { it.rssi }
     }
@@ -46,6 +55,23 @@ class DefaultMeshScanner : MeshScanner {
     override fun removePeer(address: String) {
         peersMap.remove(address)
         _discoveredPeers.value = peersMap.values.toList().sortedByDescending { it.rssi }
+    }
+
+    override fun purgeStalePeers(maxAgeMs: Long) {
+        val now = System.currentTimeMillis()
+        var changed = false
+        peersMap.entries.removeIf { entry ->
+            val peer = entry.value
+            val isStale = (now - peer.lastSeenMs > maxAgeMs) &&
+                    (peer.connectionState == PeerConnectionState.DISCONNECTED)
+            if (isStale) {
+                changed = true
+            }
+            isStale
+        }
+        if (changed) {
+            _discoveredPeers.value = peersMap.values.toList().sortedByDescending { it.rssi }
+        }
     }
 
     override fun clear() {

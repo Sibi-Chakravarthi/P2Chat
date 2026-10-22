@@ -12,36 +12,46 @@ import android.bluetooth.BluetoothGattServerCallback
 import android.bluetooth.BluetoothGattService
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothStatusCodes
 import android.content.Context
 import android.os.Build
+import com.p2chat.crypto.envelope.PacketVerdict
 import com.p2chat.pipeline.ReceivePipeline
 import com.p2chat.util.SecureLog
 import com.p2chat.wire.BleConstants
+import com.p2chat.wire.PacketHeader
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Collections
+import java.util.LinkedHashSet
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Manages dual-role BLE GATT operations (GATT Server + GATT Client)
- * coordinating active links, MTU negotiation, and chunked packet routing (NET-1, NET-2, NET-3, T2.2, T2.6, T2.8).
+ * coordinating active links, MTU negotiation, sequential chunked packet queues,
+ * deterministic tie-breaking, and epidemic mesh packet forwarding (NET-1, NET-2, NET-3, NET-6, T2.2, T2.6, T2.8).
  */
 class GattMeshManager(
     private val context: Context,
     private val connectionPool: ConnectionPool,
     private val meshTransport: MeshTransport,
     private val receivePipeline: ReceivePipeline?,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default)
+    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
+    var localPeerId: Long? = null
 ) {
     companion object {
         private const val TAG = "GattMeshManager"
         private val SERVICE_UUID = UUID.fromString(BleConstants.SERVICE_UUID)
         private val CHAR_UUID = UUID.fromString(BleConstants.CHARACTERISTIC_UUID)
         private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+        private const val WRITE_TIMEOUT_MS = 2000L
+        private const val MAX_SEEN_CACHE_SIZE = 1000
     }
 
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -55,7 +65,22 @@ class GattMeshManager(
     private val clientGattMap = ConcurrentHashMap<String, BluetoothGatt>()
     private val activeSinks = ConcurrentHashMap<String, PeerSink>()
     private val writeLocks = ConcurrentHashMap<String, Mutex>()
+    private val negotiatedMtuMap = ConcurrentHashMap<String, Int>()
+
+    // Pending sequential write/notify completions per peer
+    private val clientWriteCompletions = ConcurrentHashMap<String, CompletableDeferred<Int>>()
+    private val serverNotifyCompletions = ConcurrentHashMap<String, CompletableDeferred<Int>>()
+
+    // LRU deduplication cache: msg_id -> seen
+    private val seenMsgIds = Collections.synchronizedSet(LinkedHashSet<Long>(MAX_SEEN_CACHE_SIZE))
+
     private val reassembler = Reassembler()
+
+    fun evictSeenPacket(msgId: Long) {
+        synchronized(seenMsgIds) {
+            seenMsgIds.remove(msgId)
+        }
+    }
 
     // ── GATT Server ──────────────────────────────────────────────────────────
 
@@ -92,6 +117,7 @@ class GattMeshManager(
                 offset: Int,
                 value: ByteArray?
             ) {
+                // Bug 5: Always respond immediately if responseNeeded to avoid hanging the client
                 if (responseNeeded) {
                     gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
                 }
@@ -115,9 +141,43 @@ class GattMeshManager(
                 }
             }
 
+            override fun onCharacteristicReadRequest(
+                device: BluetoothDevice,
+                requestId: Int,
+                offset: Int,
+                characteristic: BluetoothGattCharacteristic
+            ) {
+                if (responseNeeded(requestId)) {
+                    gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, characteristic.value ?: ByteArray(0))
+                }
+            }
+
+            override fun onDescriptorReadRequest(
+                device: BluetoothDevice,
+                requestId: Int,
+                offset: Int,
+                descriptor: BluetoothGattDescriptor
+            ) {
+                if (responseNeeded(requestId)) {
+                    gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, descriptor.value ?: ByteArray(0))
+                }
+            }
+
+            override fun onExecuteWrite(device: BluetoothDevice, requestId: Int, execute: Boolean) {
+                gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, 0, null)
+            }
+
+            override fun onNotificationSent(device: BluetoothDevice, status: Int) {
+                // Bug 4: Complete the pending server notification for this peer
+                serverNotifyCompletions[device.address]?.complete(status)
+            }
+
             override fun onMtuChanged(device: BluetoothDevice, mtu: Int) {
                 SecureLog.d(TAG, "GATT Server: MTU changed to $mtu for ${device.address}")
+                negotiatedMtuMap[device.address] = mtu
             }
+
+            private fun responseNeeded(requestId: Int): Boolean = requestId != 0
         }
 
         try {
@@ -162,10 +222,20 @@ class GattMeshManager(
     // ── GATT Client ──────────────────────────────────────────────────────────
 
     @SuppressLint("MissingPermission")
-    fun connectToPeer(device: BluetoothDevice) {
+    fun connectToPeer(device: BluetoothDevice, remotePeerId: Long? = null) {
         val address = device.address
         if (clientGattMap.containsKey(address) || serverCentrals.containsKey(address)) {
             return
+        }
+
+        // Bug 2: Deterministic Tie-Breaking
+        // If both nodes discover each other, only the node with the higher Peer ID initiates connectGatt().
+        val myId = localPeerId
+        if (myId != null && remotePeerId != null) {
+            if (myId <= remotePeerId) {
+                SecureLog.d(TAG, "Deterministic tie-break: local peer ID ($myId) <= remote ($remotePeerId); awaiting incoming GATT connection")
+                return
+            }
         }
 
         if (connectionPool.getActiveConnectionCount() >= ConnectionPool.MAX_ACTIVE_CONNECTIONS) {
@@ -182,10 +252,10 @@ class GattMeshManager(
                 if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
                     SecureLog.d(TAG, "GATT Client connected to $addr")
                     clientGattMap[addr] = gatt
-                    connectionPool.setConnectionState(addr, PeerConnectionState.CONNECTED)
 
-                    // Request 517-byte MTU (T2.8). If request fails, discover services directly.
-                    if (!gatt.requestMtu(517)) {
+                    // Sequence step 1: Request 517 MTU before service discovery (Bug 4)
+                    val requested = gatt.requestMtu(517)
+                    if (!requested) {
                         gatt.discoverServices()
                     }
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -200,7 +270,10 @@ class GattMeshManager(
             }
 
             override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
-                SecureLog.d(TAG, "GATT Client: MTU changed to $mtu for ${gatt.device.address} (status $status)")
+                val addr = gatt.device.address
+                negotiatedMtuMap[addr] = mtu
+                SecureLog.d(TAG, "GATT Client: MTU changed to $mtu for $addr (status $status)")
+                // Sequence step 2: Discover services after MTU change
                 gatt.discoverServices()
             }
 
@@ -214,7 +287,7 @@ class GattMeshManager(
                     // Enable notifications locally
                     gatt.setCharacteristicNotification(characteristic, true)
 
-                    // Enable CCCD descriptor
+                    // Sequence step 3: Write CCCD descriptor and await onDescriptorWrite before marking ready
                     val cccd = characteristic.getDescriptor(CCCD_UUID)
                     if (cccd != null) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -225,9 +298,20 @@ class GattMeshManager(
                             @Suppress("DEPRECATION")
                             gatt.writeDescriptor(cccd)
                         }
+                    } else {
+                        registerClientSink(gatt, characteristic)
+                        connectionPool.setConnectionState(gatt.device.address, PeerConnectionState.CONNECTED)
                     }
+                }
+            }
 
-                    registerClientSink(gatt, characteristic)
+            override fun onDescriptorWrite(gatt: BluetoothGatt, descriptor: BluetoothGattDescriptor, status: Int) {
+                if (descriptor.uuid == CCCD_UUID && status == BluetoothGatt.GATT_SUCCESS) {
+                    val addr = gatt.device.address
+                    val char = descriptor.characteristic ?: return
+                    SecureLog.d(TAG, "CCCD descriptor written successfully; client sink ready for $addr")
+                    registerClientSink(gatt, char)
+                    connectionPool.setConnectionState(addr, PeerConnectionState.CONNECTED)
                 }
             }
 
@@ -255,7 +339,8 @@ class GattMeshManager(
                 characteristic: BluetoothGattCharacteristic,
                 status: Int
             ) {
-                // Notifies write queue completion if needed
+                // Bug 4: Complete the pending client write for this peer
+                clientWriteCompletions[gatt.device.address]?.complete(status)
             }
         }
 
@@ -289,6 +374,8 @@ class GattMeshManager(
         stopGattServer()
         clientGattMap.keys.toList().forEach { disconnectPeer(it) }
         activeSinks.clear()
+        clientWriteCompletions.clear()
+        serverNotifyCompletions.clear()
     }
 
     // ── Internal Helpers ─────────────────────────────────────────────────────
@@ -297,11 +384,59 @@ class GattMeshManager(
         scope.launch {
             try {
                 val completeFrame = reassembler.processIncomingPacket(peerAddress, bytes) ?: return@launch
+                if (completeFrame.size < BleConstants.HEADER_SIZE_BYTES) {
+                    SecureLog.w(TAG, "Received frame shorter than header size from $peerAddress")
+                    return@launch
+                }
+
+                val header = PacketHeader.decode(completeFrame, 0).getOrElse { err ->
+                    SecureLog.w(TAG, "Failed to decode packet header from $peerAddress: ${err.message}")
+                    return@launch
+                }
+
+                // Mesh Deduplication (Bug 6, NET-9)
+                val isDuplicate = synchronized(seenMsgIds) {
+                    if (seenMsgIds.contains(header.msgId)) {
+                        true
+                    } else {
+                        if (seenMsgIds.size >= MAX_SEEN_CACHE_SIZE) {
+                            val iter = seenMsgIds.iterator()
+                            if (iter.hasNext()) {
+                                iter.next()
+                                iter.remove()
+                            }
+                        }
+                        seenMsgIds.add(header.msgId)
+                        false
+                    }
+                }
+                if (isDuplicate) {
+                    return@launch
+                }
+
                 val pipeline = receivePipeline ?: MeshService.sharedReceivePipeline
-                if (pipeline == null) {
+                val verdict = if (pipeline == null) {
                     SecureLog.w(TAG, "receivePipeline is null, dropping frame from $peerAddress")
+                    null
                 } else {
                     pipeline.processFrame(completeFrame)
+                }
+
+                // D-6 Eviction: On bad signature or auth failure, evict from seenMsgIds
+                if (verdict is PacketVerdict.DropBadSignature || verdict is PacketVerdict.DropAuthFail) {
+                    synchronized(seenMsgIds) { seenMsgIds.remove(header.msgId) }
+                    return@launch
+                }
+
+                // Forwarding / Relaying (Bug 6, NET-6, SEC-5)
+                // Epidemic flooding forwards a new packet to every connected peer except the one it arrived from.
+                if (header.ttl > 1) {
+                    val relayedFrame = completeFrame.clone()
+                    relayedFrame[BleConstants.OFFSET_TTL] = (header.ttl - 1).toByte()
+                    meshTransport.flood(relayedFrame, excludePeerId = peerAddress)
+                    SecureLog.d(TAG, "Forwarded packet ${header.msgId} (relayed TTL: ${header.ttl - 1})")
+                } else {
+                    SecureLog.d(TAG, "Packet ${header.msgId} TTL expired for forwarding")
                 }
             } catch (t: Throwable) {
                 SecureLog.w(TAG, "Error in receivePipeline from $peerAddress: ${t.message}")
@@ -312,6 +447,10 @@ class GattMeshManager(
     @SuppressLint("MissingPermission")
     private fun registerClientSink(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         val address = gatt.device.address
+        if (activeSinks.containsKey(address)) {
+            return
+        }
+
         val mutex = writeLocks.getOrPut(address) { Mutex() }
         val sink = object : PeerSink {
             override val peerId: String = address
@@ -319,20 +458,38 @@ class GattMeshManager(
             override suspend fun sendFrame(frameBytes: ByteArray): Boolean = mutex.withLock {
                 try {
                     characteristic.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-                    val chunks = Chunker.chunk(frameBytes, maxChunkSize = 480)
+                    val negotiatedMtu = negotiatedMtuMap[address] ?: 517
+                    val maxChunkSize = (negotiatedMtu - 3).coerceIn(20, 480)
+                    val chunks = Chunker.chunk(frameBytes, maxChunkSize = maxChunkSize)
                     var allOk = true
+
                     for (chunk in chunks) {
+                        val deferred = CompletableDeferred<Int>()
+                        clientWriteCompletions[address] = deferred
+
                         val ok = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            gatt.writeCharacteristic(characteristic, chunk, BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE) == BluetoothGatt.GATT_SUCCESS
+                            gatt.writeCharacteristic(
+                                characteristic,
+                                chunk,
+                                BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                            ) == BluetoothStatusCodes.SUCCESS
                         } else {
                             @Suppress("DEPRECATION")
                             characteristic.value = chunk
                             @Suppress("DEPRECATION")
                             gatt.writeCharacteristic(characteristic)
                         }
-                        if (!ok) allOk = false
-                        if (chunks.size > 1) {
-                            delay(10)
+
+                        if (!ok) {
+                            clientWriteCompletions.remove(address)
+                            allOk = false
+                            break
+                        }
+
+                        val status = withTimeoutOrNull(WRITE_TIMEOUT_MS) { deferred.await() }
+                        clientWriteCompletions.remove(address)
+                        if (status != null && status != BluetoothGatt.GATT_SUCCESS) {
+                            allOk = false
                         }
                     }
                     allOk
@@ -351,6 +508,10 @@ class GattMeshManager(
     @SuppressLint("MissingPermission")
     private fun registerServerSink(device: BluetoothDevice) {
         val address = device.address
+        if (activeSinks.containsKey(address)) {
+            return
+        }
+
         val char = gattCharacteristic ?: return
         val server = gattServer ?: return
         val mutex = writeLocks.getOrPut(address) { Mutex() }
@@ -360,20 +521,39 @@ class GattMeshManager(
 
             override suspend fun sendFrame(frameBytes: ByteArray): Boolean = mutex.withLock {
                 try {
-                    val chunks = Chunker.chunk(frameBytes, maxChunkSize = 480)
+                    val negotiatedMtu = negotiatedMtuMap[address] ?: 517
+                    val maxChunkSize = (negotiatedMtu - 3).coerceIn(20, 480)
+                    val chunks = Chunker.chunk(frameBytes, maxChunkSize = maxChunkSize)
                     var allOk = true
+
                     for (chunk in chunks) {
+                        val deferred = CompletableDeferred<Int>()
+                        serverNotifyCompletions[address] = deferred
+
                         val ok = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            server.notifyCharacteristicChanged(device, char, false, chunk) == BluetoothGatt.GATT_SUCCESS
+                            server.notifyCharacteristicChanged(
+                                device,
+                                char,
+                                false,
+                                chunk
+                            ) == BluetoothStatusCodes.SUCCESS
                         } else {
                             @Suppress("DEPRECATION")
                             char.value = chunk
                             @Suppress("DEPRECATION")
                             server.notifyCharacteristicChanged(device, char, false)
                         }
-                        if (!ok) allOk = false
-                        if (chunks.size > 1) {
-                            delay(10)
+
+                        if (!ok) {
+                            serverNotifyCompletions.remove(address)
+                            allOk = false
+                            break
+                        }
+
+                        val status = withTimeoutOrNull(WRITE_TIMEOUT_MS) { deferred.await() }
+                        serverNotifyCompletions.remove(address)
+                        if (status != null && status != BluetoothGatt.GATT_SUCCESS) {
+                            allOk = false
                         }
                     }
                     allOk
@@ -395,5 +575,8 @@ class GattMeshManager(
             meshTransport.unregisterSink(sink)
         }
         writeLocks.remove(address)
+        negotiatedMtuMap.remove(address)
+        clientWriteCompletions.remove(address)?.cancel()
+        serverNotifyCompletions.remove(address)?.cancel()
     }
 }

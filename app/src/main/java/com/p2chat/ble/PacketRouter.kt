@@ -15,7 +15,7 @@ interface PacketRouter {
 }
 
 /**
- * Default implementation backed by Room mesh DAOs.
+ * Default implementation backed by Room mesh DAOs and in-memory deduplication cache.
  */
 class DefaultPacketRouter(
     private val seenMessageDao: SeenMessageDao,
@@ -25,5 +25,6 @@ class DefaultPacketRouter(
     override suspend fun evict(msgId: Long) {
         seenMessageDao.delete(msgId)
         bufferedPacketDao.delete(msgId)
+        MeshService.sharedGattManager?.evictSeenPacket(msgId)
     }
 }

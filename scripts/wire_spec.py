@@ -9,6 +9,7 @@ verified by scripts/check_wire_parity.py.
 # ── BLE GATT Service & Characteristics ──────────────────────────────────────
 SERVICE_UUID: str = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
 CHARACTERISTIC_UUID: str = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+BLE_MANUFACTURER_ID: int = 0xFFFF
 
 # ── Packet Types (1 byte) ───────────────────────────────────────────────────
 PACKET_TYPE_CHAT: int = 0x01

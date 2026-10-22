@@ -190,6 +190,9 @@ class RadarViewModel(
         val current = connectionPool.getConnectionState(address)
         if (current == PeerConnectionState.CONNECTED || current == PeerConnectionState.CONNECTING) {
             connectionPool.setConnectionState(address, PeerConnectionState.DISCONNECTED)
+            try {
+                com.p2chat.ble.MeshService.sharedGattManager?.disconnectPeer(address)
+            } catch (_: Throwable) {}
             viewModelScope.launch { _snackbarEvent.emit("Disconnected from $address") }
         } else {
             connectionPool.setConnectionState(address, PeerConnectionState.CONNECTING)

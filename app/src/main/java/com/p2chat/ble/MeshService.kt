@@ -135,19 +135,47 @@ class MeshService : Service() {
 
         // Start Advertiser
         advertiser = MeshAdvertiser(context)
-        advertiser?.startAdvertising()
 
-        // Start Scanner with auto-connect
+        // Resolve persistent local peer ID
+        serviceScope.launch {
+            val peerId = resolveLocalPeerId(context)
+            advertiser?.localPeerId = peerId
+            gattManager?.localPeerId = peerId
+            advertiser?.startAdvertising(peerId)
+        }
+
+        // Start Scanner with deterministic auto-connect
         scanner = AndroidMeshScanner(
             context = context,
             onPeerDiscovered = { peer, device ->
-                gattManager?.connectToPeer(device)
-            }
+                gattManager?.connectToPeer(device, peer.senderFp)
+            },
+            coroutineScope = serviceScope
         )
         sharedScanner = scanner
         scanner?.startScan()
 
         SecureLog.d(TAG, "Mesh components successfully started (Advertiser + Scanner + GATT)")
+    }
+
+    private suspend fun resolveLocalPeerId(context: Context): Long {
+        return try {
+            val db = AppDatabase.getInstance(context)
+            val identity = db.localIdentityDao().getIdentity()
+            if (identity != null) {
+                identity.senderFp
+            } else {
+                val prefs = context.getSharedPreferences("p2chat_mesh_prefs", Context.MODE_PRIVATE)
+                var nodeId = prefs.getLong("mesh_node_id", 0L)
+                if (nodeId == 0L) {
+                    nodeId = java.security.SecureRandom().nextLong()
+                    prefs.edit().putLong("mesh_node_id", nodeId).apply()
+                }
+                nodeId
+            }
+        } catch (_: Throwable) {
+            java.security.SecureRandom().nextLong()
+        }
     }
 
     private fun startAsForeground() {
