@@ -1,9 +1,11 @@
 package com.p2chat.ble
 
+import com.p2chat.wire.BleConstants
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import java.util.Random
 
@@ -66,5 +68,41 @@ class ChunkerTest {
         // Feed second chunk at t=2000 (expired)
         val result = reassembler.processIncomingPacket("peer1", chunks[1], nowMs = 2000)
         assertNull(result)
+    }
+
+    @Test
+    fun chunk_rejectsFrameLargerThanProtocolLimit() {
+        assertThrows(IllegalArgumentException::class.java) {
+            Chunker.chunk(ByteArray(BleConstants.MAX_FRAME_SIZE_BYTES + 1))
+        }
+    }
+
+    @Test
+    fun reassembler_rejectsOversizedSingleAndLegacyFrames() {
+        val reassembler = Reassembler(maxFrameSizeBytes = 32)
+        val oversizedSingle = ByteArray(37)
+        oversizedSingle[0] = BleConstants.TRANSPORT_KIND_SINGLE
+        oversizedSingle[3] = 1
+
+        assertNull(reassembler.processIncomingPacket("peer1", oversizedSingle))
+        assertNull(reassembler.processIncomingPacket("peer1", ByteArray(33) { 0x7f }))
+    }
+
+    @Test
+    fun reassembler_discardsConflictingAssemblyInsteadOfMixingChunks() {
+        val reassembler = Reassembler()
+        val firstAssembly = byteArrayOf(
+            BleConstants.TRANSPORT_KIND_CHUNK, 42, 0, 2, 0x11
+        )
+        val conflictingAssembly = byteArrayOf(
+            BleConstants.TRANSPORT_KIND_CHUNK, 42, 0, 3, 0x22
+        )
+        val staleSecondChunk = byteArrayOf(
+            BleConstants.TRANSPORT_KIND_CHUNK, 42, 1, 2, 0x33
+        )
+
+        assertNull(reassembler.processIncomingPacket("peer1", firstAssembly))
+        assertNull(reassembler.processIncomingPacket("peer1", conflictingAssembly))
+        assertNull(reassembler.processIncomingPacket("peer1", staleSecondChunk))
     }
 }

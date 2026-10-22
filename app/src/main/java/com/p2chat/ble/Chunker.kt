@@ -28,6 +28,9 @@ object Chunker {
      * @param maxChunkSize The maximum allowed byte size for each chunk (typically MTU - 3).
      */
     fun chunk(frameBytes: ByteArray, maxChunkSize: Int = 500): List<ByteArray> {
+        require(frameBytes.size <= BleConstants.MAX_FRAME_SIZE_BYTES) {
+            "Frame size ${frameBytes.size} exceeds maximum ${BleConstants.MAX_FRAME_SIZE_BYTES} bytes"
+        }
         val maxPayloadPerChunk = maxChunkSize - BleConstants.TRANSPORT_HEADER_SIZE_BYTES
         require(maxPayloadPerChunk > 0) { "maxChunkSize ($maxChunkSize) must be > 4" }
 
@@ -75,10 +78,11 @@ class Reassembler(
         val totalChunks: Int,
         val chunks: Array<ByteArray?>,
         var receivedCount: Int = 0,
+        var receivedBytes: Int = 0,
         var lastUpdatedAtMs: Long = System.currentTimeMillis()
     )
 
-    private val sessionMap = ConcurrentHashMap<String, MutableMap<Int, PartialFrame>>()
+    private val sessionMap = ConcurrentHashMap<String, ConcurrentHashMap<Int, PartialFrame>>()
 
     /**
      * Processes an incoming raw transport packet from a peer.
@@ -96,16 +100,17 @@ class Reassembler(
 
             if (kind == BleConstants.TRANSPORT_KIND_SINGLE && chunkCount == 1 && chunkIndex == 0) {
                 val payloadSize = packet.size - BleConstants.TRANSPORT_HEADER_SIZE_BYTES
+                if (payloadSize > maxFrameSizeBytes) return null
                 val frame = ByteArray(payloadSize)
                 System.arraycopy(packet, BleConstants.TRANSPORT_HEADER_SIZE_BYTES, frame, 0, payloadSize)
                 return frame
             }
 
             if (kind == BleConstants.TRANSPORT_KIND_CHUNK && chunkCount > 0 && chunkIndex < chunkCount) {
-                val peerSessions = sessionMap.getOrPut(peerAddress) { ConcurrentHashMap() }
+                val peerSessions = sessionMap.computeIfAbsent(peerAddress) { ConcurrentHashMap() }
                 cleanExpired(peerSessions, nowMs)
 
-                val partial = peerSessions.getOrPut(frameId) {
+                val partial = peerSessions.computeIfAbsent(frameId) {
                     PartialFrame(
                         frameId = frameId,
                         totalChunks = chunkCount,
@@ -113,40 +118,58 @@ class Reassembler(
                     )
                 }
 
-                if (chunkIndex < partial.chunks.size && partial.chunks[chunkIndex] == null) {
-                    val payloadSize = packet.size - BleConstants.TRANSPORT_HEADER_SIZE_BYTES
-                    val chunkData = ByteArray(payloadSize)
-                    System.arraycopy(packet, BleConstants.TRANSPORT_HEADER_SIZE_BYTES, chunkData, 0, payloadSize)
-                    partial.chunks[chunkIndex] = chunkData
-                    partial.receivedCount++
-                    partial.lastUpdatedAtMs = nowMs
-
-                    if (partial.receivedCount == partial.totalChunks) {
-                        peerSessions.remove(frameId)
-                        val totalBytes = partial.chunks.filterNotNull().sumOf { it.size }
-                        if (totalBytes > maxFrameSizeBytes) {
-                            return null // Oversize frame rejected (NET-12)
-                        }
-                        val completeFrame = ByteArray(totalBytes)
-                        var destOffset = 0
-                        for (c in partial.chunks) {
-                            if (c != null) {
-                                System.arraycopy(c, 0, completeFrame, destOffset, c.size)
-                                destOffset += c.size
-                            }
-                        }
-                        return completeFrame
+                // A reused frame ID must describe the same assembly.  Mixing two
+                // different chunk counts could otherwise construct a frame from
+                // unrelated packets.
+                return synchronized(partial) {
+                    if (partial.totalChunks != chunkCount) {
+                        peerSessions.remove(frameId, partial)
+                        return null
                     }
+
+                    if (chunkIndex < partial.chunks.size && partial.chunks[chunkIndex] == null) {
+                        val payloadSize = packet.size - BleConstants.TRANSPORT_HEADER_SIZE_BYTES
+                        // Reject before retaining attacker-controlled data.  Waiting
+                        // until all chunks arrive permits an oversized partial frame to
+                        // consume unbounded memory.
+                        if (payloadSize > maxFrameSizeBytes ||
+                            partial.receivedBytes > maxFrameSizeBytes - payloadSize
+                        ) {
+                            peerSessions.remove(frameId, partial)
+                            return null
+                        }
+                        val chunkData = ByteArray(payloadSize)
+                        System.arraycopy(packet, BleConstants.TRANSPORT_HEADER_SIZE_BYTES, chunkData, 0, payloadSize)
+                        partial.chunks[chunkIndex] = chunkData
+                        partial.receivedCount++
+                        partial.receivedBytes += payloadSize
+                        partial.lastUpdatedAtMs = nowMs
+
+                        if (partial.receivedCount == partial.totalChunks) {
+                            peerSessions.remove(frameId, partial)
+                            val totalBytes = partial.receivedBytes
+                            val completeFrame = ByteArray(totalBytes)
+                            var destOffset = 0
+                            for (c in partial.chunks) {
+                                if (c != null) {
+                                    System.arraycopy(c, 0, completeFrame, destOffset, c.size)
+                                    destOffset += c.size
+                                }
+                            }
+                            return completeFrame
+                        }
+                    }
+                    null
                 }
-                return null
             }
         }
 
-        // 2. Legacy / unchunked raw fallback (packet without 4-byte transport framing)
-        return packet
+        // 2. Legacy / unchunked raw fallback (packet without 4-byte transport framing).
+        // It is still subject to the same frame cap as transport-framed packets.
+        return packet.takeIf { it.size <= maxFrameSizeBytes }
     }
 
-    private fun cleanExpired(sessions: MutableMap<Int, PartialFrame>, nowMs: Long) {
+    private fun cleanExpired(sessions: ConcurrentHashMap<Int, PartialFrame>, nowMs: Long) {
         sessions.entries.removeIf { nowMs - it.value.lastUpdatedAtMs > expiryTimeoutMs }
     }
 }
