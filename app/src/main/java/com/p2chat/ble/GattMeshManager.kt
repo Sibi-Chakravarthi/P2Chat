@@ -52,6 +52,11 @@ class GattMeshManager(
         private val CCCD_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
         private const val WRITE_TIMEOUT_MS = 2000L
         private const val MAX_SEEN_CACHE_SIZE = 1000
+        const val CONNECTION_TIMEOUT_MS = 8000L
+        const val PASSIVE_WAIT_TIMEOUT_MS = 8000L
+        const val MAX_RETRY_ATTEMPTS = 3
+        const val BASE_RETRY_DELAY_MS = 1000L
+        const val EXTENDED_COOLDOWN_MS = 15_000L
     }
 
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
@@ -63,6 +68,53 @@ class GattMeshManager(
     // Active connected centrals (server role) and active client connections (client role)
     private val serverCentrals = ConcurrentHashMap<String, BluetoothDevice>()
     private val clientGattMap = ConcurrentHashMap<String, BluetoothGatt>()
+
+    // Active in-flight connection tracking to prevent redundant connectGatt storms (Issue 2)
+    private val inFlightConnections = ConcurrentHashMap<String, Long>()
+    private val inFlightTimeouts = ConcurrentHashMap<String, kotlinx.coroutines.Job>()
+
+    // Resilient connection retry and exponential backoff tracking (Issue 4)
+    private val retryCounts = ConcurrentHashMap<String, Int>()
+    private val connectionCooldowns = ConcurrentHashMap<String, Long>()
+
+    // Tie-breaker passive wait tracking with timeout fallback (Issue 3)
+    private val passiveWaitStarts = ConcurrentHashMap<String, Long>()
+
+    // Map of discovered / known remote peer IDs (address -> senderFp)
+    private val remotePeerIds = ConcurrentHashMap<String, Long>()
+
+    // Mutex to serialize connectGatt invocations across simultaneous scan hits
+    private val connectMutex = Mutex()
+
+    fun setRemotePeerId(address: String, peerId: Long) {
+        remotePeerIds[address] = peerId
+    }
+
+    fun getRemotePeerId(address: String): Long? = remotePeerIds[address]
+
+    /**
+     * Determines whether local node has tie-breaker priority (Higher Peer ID) over remote node.
+     * The node with the Higher Peer ID maintains its GATT Client connection.
+     * The node with the Lower Peer ID yields its Client connection and maintains its GATT Server role.
+     */
+    fun isLocalTieBreakerHigher(address: String, remotePeerIdHint: Long? = null): Boolean {
+        val myId = localPeerId
+        val remoteId = remotePeerIdHint
+            ?: remotePeerIds[address]
+            ?: MeshService.sharedScanner?.discoveredPeers?.value?.firstOrNull { it.address == address }?.senderFp
+
+        if (remoteId != null) {
+            remotePeerIds[address] = remoteId
+        }
+
+        return if (myId != null && remoteId != null) {
+            myId > remoteId
+        } else if (myId != null) {
+            true
+        } else {
+            false
+        }
+    }
     private val activeSinks = ConcurrentHashMap<String, PeerSink>()
     private val writeLocks = ConcurrentHashMap<String, Mutex>()
     private val negotiatedMtuMap = ConcurrentHashMap<String, Int>()
@@ -97,14 +149,48 @@ class GattMeshManager(
                 val address = device.address
                 if (newState == BluetoothProfile.STATE_CONNECTED) {
                     SecureLog.d(TAG, "GATT Server: Central $address connected")
+                    inFlightTimeouts.remove(address)?.cancel()
+                    inFlightConnections.remove(address)
+                    passiveWaitStarts.remove(address)
+                    retryCounts.remove(address)
+                    connectionCooldowns.remove(address)
+
+                    val hasClient = clientGattMap.containsKey(address)
+                    val isHigher = isLocalTieBreakerHigher(address)
+
+                    if (hasClient && isHigher) {
+                        // Higher Peer ID keeps its Client connection and rejects duplicate incoming Server connection
+                        SecureLog.d(TAG, "Duplicate connection on server: local peer is higher. Keeping client connection to $address, rejecting duplicate incoming server connection.")
+                        try {
+                            gattServer?.cancelConnection(device)
+                        } catch (_: Throwable) {}
+                        return
+                    }
+
+                    if (hasClient && !isHigher) {
+                        // Lower Peer ID yields its Client connection and accepts incoming Server connection
+                        SecureLog.d(TAG, "Duplicate connection on server: local peer is lower. Yielding client connection to $address, accepting server connection.")
+                        val existingClient = clientGattMap.remove(address)
+                        try {
+                            existingClient?.disconnect()
+                            existingClient?.close()
+                        } catch (_: Throwable) {}
+                    }
+
                     serverCentrals[address] = device
                     connectionPool.setConnectionState(address, PeerConnectionState.CONNECTED)
                     registerServerSink(device)
                 } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                     SecureLog.d(TAG, "GATT Server: Central $address disconnected")
                     serverCentrals.remove(address)
-                    unregisterSink(address)
-                    connectionPool.setConnectionState(address, PeerConnectionState.DISCONNECTED)
+
+                    // Only unregister sink and reset state if NO active Client connection exists for this peer
+                    if (!clientGattMap.containsKey(address)) {
+                        unregisterSink(address)
+                        connectionPool.setConnectionState(address, PeerConnectionState.DISCONNECTED)
+                    } else {
+                        SecureLog.d(TAG, "Server connection closed for $address, but Client connection remains active. Preserving link.")
+                    }
                 }
             }
 
@@ -224,49 +310,134 @@ class GattMeshManager(
     @SuppressLint("MissingPermission")
     fun connectToPeer(device: BluetoothDevice, remotePeerId: Long? = null) {
         val address = device.address
+        val now = System.currentTimeMillis()
+
+        if (remotePeerId != null) {
+            remotePeerIds[address] = remotePeerId
+        }
+
+        // 1. Guard against connecting if already connected
         if (clientGattMap.containsKey(address) || serverCentrals.containsKey(address)) {
             return
         }
 
-        // Bug 2: Deterministic Tie-Breaking
-        // If both nodes discover each other, only the node with the higher Peer ID initiates connectGatt().
+        // 2. Guard against in-flight connection storm (Issue 2)
+        if (inFlightConnections.containsKey(address)) {
+            SecureLog.d(TAG, "Connection already in-flight for $address; skipping redundant connect")
+            return
+        }
+
+        // 3. Guard against cooldown period after failed connections (Issue 4)
+        val cooldownUntil = connectionCooldowns[address] ?: 0L
+        if (now < cooldownUntil) {
+            SecureLog.d(TAG, "Connection to $address in cooldown for another ${cooldownUntil - now}ms; skipping")
+            return
+        }
+
+        // 4. Deterministic Tie-Breaking with Passive Wait Timeout Fallback (Issue 3)
         val myId = localPeerId
-        if (myId != null && remotePeerId != null) {
-            if (myId <= remotePeerId) {
-                SecureLog.d(TAG, "Deterministic tie-break: local peer ID ($myId) <= remote ($remotePeerId); awaiting incoming GATT connection")
-                return
+        val targetPeerId = remotePeerId ?: remotePeerIds[address]
+        if (myId != null && targetPeerId != null) {
+            if (myId <= targetPeerId) {
+                val waitStart = passiveWaitStarts.getOrPut(address) { now }
+                val elapsed = now - waitStart
+                if (elapsed < PASSIVE_WAIT_TIMEOUT_MS) {
+                    SecureLog.d(TAG, "Deterministic tie-break: local peer ID ($myId) <= remote ($targetPeerId); awaiting incoming GATT connection (elapsed: ${elapsed}ms)")
+                    return
+                } else {
+                    SecureLog.w(TAG, "Tie-break passive wait timed out for $address (${elapsed}ms >= ${PASSIVE_WAIT_TIMEOUT_MS}ms); actively falling back to initiate connection")
+                }
+            } else {
+                passiveWaitStarts.remove(address)
             }
         }
 
+        // 5. Connection pool capacity check
         if (connectionPool.getActiveConnectionCount() >= ConnectionPool.MAX_ACTIVE_CONNECTIONS) {
             connectionPool.setConnectionState(address, PeerConnectionState.QUEUED)
             return
         }
 
+        // Atomically claim in-flight state
+        if (inFlightConnections.putIfAbsent(address, now) != null) {
+            return
+        }
+
         connectionPool.setConnectionState(address, PeerConnectionState.CONNECTING)
-        SecureLog.d(TAG, "Connecting GATT client to $address...")
+        SecureLog.d(TAG, "Connecting GATT client to $address (in-flight tracking registered)...")
+
+        // 6. Schedule connection timeout (Issue 2)
+        val timeoutJob = scope.launch {
+            kotlinx.coroutines.delay(CONNECTION_TIMEOUT_MS)
+            if (inFlightConnections.containsKey(address)) {
+                SecureLog.w(TAG, "Connection attempt to $address timed out after ${CONNECTION_TIMEOUT_MS}ms; cancelling")
+                handleConnectionFailure(device, address, remotePeerId, "CONNECTION_TIMEOUT")
+            }
+        }
+        inFlightTimeouts[address] = timeoutJob
 
         val clientCallback = object : BluetoothGattCallback() {
             override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
                 val addr = gatt.device.address
+                inFlightTimeouts.remove(addr)?.cancel()
+                inFlightConnections.remove(addr)
+
                 if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
                     SecureLog.d(TAG, "GATT Client connected to $addr")
+                    retryCounts.remove(addr)
+                    connectionCooldowns.remove(addr)
+                    passiveWaitStarts.remove(addr)
+
+                    val hasServer = serverCentrals.containsKey(addr)
+                    val isHigher = isLocalTieBreakerHigher(addr, remotePeerId)
+
+                    if (hasServer && !isHigher) {
+                        // Lower Peer ID yields its Client connection in favor of existing Server connection
+                        SecureLog.d(TAG, "Duplicate connection on client: local peer is lower. Yielding client connection to $addr, preserving server connection.")
+                        try {
+                            gatt.disconnect()
+                            gatt.close()
+                        } catch (_: Throwable) {}
+                        return
+                    }
+
+                    if (hasServer && isHigher) {
+                        // Higher Peer ID keeps Client connection and terminates duplicate Server connection
+                        SecureLog.d(TAG, "Duplicate connection on client: local peer is higher. Keeping client connection to $addr, closing duplicate server connection.")
+                        val serverDevice = serverCentrals.remove(addr)
+                        if (serverDevice != null) {
+                            try {
+                                gattServer?.cancelConnection(serverDevice)
+                            } catch (_: Throwable) {}
+                        }
+                    }
+
                     clientGattMap[addr] = gatt
                     refreshGattCache(gatt)
 
-                    // Sequence step 1: Request 517 MTU before service discovery (Bug 4)
                     val requested = gatt.requestMtu(517)
                     if (!requested) {
                         gatt.discoverServices()
                     }
-                } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                    SecureLog.d(TAG, "GATT Client disconnected from $addr")
+                } else {
+                    SecureLog.w(TAG, "GATT Client disconnected/failed for $addr (status: $status, newState: $newState)")
                     clientGattMap.remove(addr)
-                    unregisterSink(addr)
-                    connectionPool.setConnectionState(addr, PeerConnectionState.DISCONNECTED)
                     try {
+                        gatt.disconnect()
                         gatt.close()
                     } catch (_: Throwable) {}
+
+                    // Only unregister sink and update pool if NO active Server connection exists
+                    if (!serverCentrals.containsKey(addr)) {
+                        unregisterSink(addr)
+                        connectionPool.setConnectionState(addr, PeerConnectionState.DISCONNECTED)
+
+                        if (status != BluetoothGatt.GATT_SUCCESS) {
+                            handleConnectionFailure(gatt.device, addr, remotePeerId, "GATT_STATUS_$status")
+                        }
+                    } else {
+                        SecureLog.d(TAG, "Client disconnected from $addr, but Server connection remains active. Preserving link.")
+                    }
                 }
             }
 
@@ -274,21 +445,21 @@ class GattMeshManager(
                 val addr = gatt.device.address
                 negotiatedMtuMap[addr] = mtu
                 SecureLog.d(TAG, "GATT Client: MTU changed to $mtu for $addr (status $status)")
-                // Sequence step 2: Discover services after MTU change
                 gatt.discoverServices()
             }
 
             override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
-                if (status != BluetoothGatt.GATT_SUCCESS) return
+                if (status != BluetoothGatt.GATT_SUCCESS) {
+                    handleConnectionFailure(gatt.device, gatt.device.address, remotePeerId, "SERVICE_DISCOVERY_STATUS_$status")
+                    return
+                }
                 val service = gatt.getService(SERVICE_UUID)
                 val characteristic = service?.getCharacteristic(CHAR_UUID)
 
                 if (characteristic != null) {
                     SecureLog.d(TAG, "GATT Client discovered P2Chat service on ${gatt.device.address}")
-                    // Enable notifications locally
                     gatt.setCharacteristicNotification(characteristic, true)
 
-                    // Sequence step 3: Write CCCD descriptor and await onDescriptorWrite before marking ready
                     val cccd = characteristic.getDescriptor(CCCD_UUID)
                     if (cccd != null) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -316,7 +487,6 @@ class GattMeshManager(
                 }
             }
 
-            // Android 13+ (API 33+) callback
             override fun onCharacteristicChanged(
                 gatt: BluetoothGatt,
                 characteristic: BluetoothGattCharacteristic,
@@ -340,22 +510,73 @@ class GattMeshManager(
                 characteristic: BluetoothGattCharacteristic,
                 status: Int
             ) {
-                // Bug 4: Complete the pending client write for this peer
                 clientWriteCompletions[gatt.device.address]?.complete(status)
             }
         }
 
-        try {
-            val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                device.connectGatt(context, false, clientCallback, BluetoothDevice.TRANSPORT_LE)
-            } else {
-                device.connectGatt(context, false, clientCallback)
+        scope.launch {
+            connectMutex.withLock {
+                if (clientGattMap.containsKey(address) || serverCentrals.containsKey(address)) {
+                    inFlightTimeouts.remove(address)?.cancel()
+                    inFlightConnections.remove(address)
+                    return@launch
+                }
+
+                try {
+                    val gatt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        device.connectGatt(context, false, clientCallback, BluetoothDevice.TRANSPORT_LE)
+                    } else {
+                        device.connectGatt(context, false, clientCallback)
+                    }
+                    clientGattMap[address] = gatt
+                    refreshGattCache(gatt)
+                } catch (t: Throwable) {
+                    SecureLog.e(TAG, "Exception initiating connectGatt to $address: ${t.message}")
+                    handleConnectionFailure(device, address, remotePeerId, t.message ?: "CONNECT_EXCEPTION")
+                }
             }
-            clientGattMap[address] = gatt
-            refreshGattCache(gatt)
-        } catch (t: Throwable) {
-            SecureLog.e(TAG, "Exception initiating connectGatt to $address: ${t.message}")
-            connectionPool.setConnectionState(address, PeerConnectionState.DISCONNECTED)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun handleConnectionFailure(
+        device: BluetoothDevice,
+        address: String,
+        remotePeerId: Long?,
+        reason: String
+    ) {
+        inFlightTimeouts.remove(address)?.cancel()
+        inFlightConnections.remove(address)
+        val gatt = clientGattMap.remove(address)
+        try {
+            gatt?.disconnect()
+            gatt?.close()
+        } catch (_: Throwable) {}
+        unregisterSink(address)
+        connectionPool.setConnectionState(address, PeerConnectionState.DISCONNECTED)
+
+        val currentRetries = retryCounts.compute(address) { _, count -> (count ?: 0) + 1 } ?: 1
+
+        if (currentRetries <= MAX_RETRY_ATTEMPTS) {
+            val jitter = (0..500).random()
+            val backoffMs = (BASE_RETRY_DELAY_MS * (1L shl (currentRetries - 1))) + jitter
+            connectionCooldowns[address] = System.currentTimeMillis() + backoffMs
+            SecureLog.w(TAG, "Connection failed to $address ($reason). Scheduling retry $currentRetries/$MAX_RETRY_ATTEMPTS in ${backoffMs}ms")
+
+            scope.launch {
+                kotlinx.coroutines.delay(backoffMs)
+                if (!clientGattMap.containsKey(address) && !serverCentrals.containsKey(address)) {
+                    SecureLog.d(TAG, "Executing scheduled retry $currentRetries for $address...")
+                    connectToPeer(device, remotePeerId)
+                }
+            }
+        } else {
+            connectionCooldowns[address] = System.currentTimeMillis() + EXTENDED_COOLDOWN_MS
+            SecureLog.w(TAG, "Connection to $address failed after $MAX_RETRY_ATTEMPTS attempts ($reason). Entering extended cooldown of ${EXTENDED_COOLDOWN_MS}ms")
+            scope.launch {
+                kotlinx.coroutines.delay(EXTENDED_COOLDOWN_MS)
+                retryCounts.remove(address)
+            }
         }
     }
 
@@ -377,11 +598,22 @@ class GattMeshManager(
 
     @SuppressLint("MissingPermission")
     fun disconnectPeer(address: String) {
+        inFlightTimeouts.remove(address)?.cancel()
+        inFlightConnections.remove(address)
+        passiveWaitStarts.remove(address)
+        retryCounts.remove(address)
+        connectionCooldowns.remove(address)
         val client = clientGattMap.remove(address)
         if (client != null) {
             try {
                 client.disconnect()
                 client.close()
+            } catch (_: Throwable) {}
+        }
+        val serverCentral = serverCentrals.remove(address)
+        if (serverCentral != null) {
+            try {
+                gattServer?.cancelConnection(serverCentral)
             } catch (_: Throwable) {}
         }
         unregisterSink(address)
@@ -390,6 +622,12 @@ class GattMeshManager(
 
     fun stopAll() {
         stopGattServer()
+        inFlightTimeouts.values.forEach { it.cancel() }
+        inFlightTimeouts.clear()
+        inFlightConnections.clear()
+        passiveWaitStarts.clear()
+        retryCounts.clear()
+        connectionCooldowns.clear()
         clientGattMap.keys.toList().forEach { disconnectPeer(it) }
         activeSinks.clear()
         clientWriteCompletions.clear()
@@ -465,8 +703,9 @@ class GattMeshManager(
     @SuppressLint("MissingPermission")
     private fun registerClientSink(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic) {
         val address = gatt.device.address
-        if (activeSinks.containsKey(address)) {
-            return
+        val existing = activeSinks[address]
+        if (existing != null) {
+            meshTransport.unregisterSink(existing)
         }
 
         val mutex = writeLocks.getOrPut(address) { Mutex() }
@@ -526,8 +765,9 @@ class GattMeshManager(
     @SuppressLint("MissingPermission")
     private fun registerServerSink(device: BluetoothDevice) {
         val address = device.address
-        if (activeSinks.containsKey(address)) {
-            return
+        val existing = activeSinks[address]
+        if (existing != null) {
+            meshTransport.unregisterSink(existing)
         }
 
         val char = gattCharacteristic ?: return

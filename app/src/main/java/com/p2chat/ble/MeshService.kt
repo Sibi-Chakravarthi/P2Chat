@@ -148,6 +148,9 @@ class MeshService : Service() {
         scanner = AndroidMeshScanner(
             context = context,
             onPeerDiscovered = { peer, device ->
+                peer.senderFp?.let { fp ->
+                    gattManager?.setRemotePeerId(device.address, fp)
+                }
                 gattManager?.connectToPeer(device, peer.senderFp)
             },
             coroutineScope = serviceScope

@@ -147,10 +147,15 @@ class AndroidMeshScanner(
                 else -> "UNKNOWN ($errorCode)"
             }
             SecureLog.e(TAG, "BLE scan failed: $reason")
+            if (errorCode == SCAN_FAILED_ALREADY_STARTED) {
+                _isScanning.value = true
+                _scanFailureReason.value = null
+                return
+            }
             _scanFailureReason.value = reason
             _isScanning.value = false
-            stopWatchdog()
             stopPruneTimer()
+            scheduleScanRecovery(errorCode)
         }
     }
 
@@ -199,13 +204,12 @@ class AndroidMeshScanner(
             _isScanning.value = true
             _scanFailureReason.value = null
             startPruneTimer()
-            startWatchdog()
+            stopRecoveryJob()
             SecureLog.d(TAG, "BLE scanner started (mode: LOW_LATENCY, AGGRESSIVE, MAX_MATCHES)")
         } catch (t: Throwable) {
             _scanFailureReason.value = t.message
             SecureLog.e(TAG, "Exception starting BLE scan: ${t.message}")
             _isScanning.value = false
-            stopWatchdog()
             stopPruneTimer()
         }
     }
@@ -222,7 +226,7 @@ class AndroidMeshScanner(
             _isScanning.value = false
             _scanFailureReason.value = null
             stopPruneTimer()
-            stopWatchdog()
+            stopRecoveryJob()
         }
     }
 
@@ -279,12 +283,7 @@ class AndroidMeshScanner(
 
     private fun startWatchdog() {
         watchdogJob?.cancel()
-        watchdogJob = coroutineScope.launch {
-            while (isActive) {
-                delay(WATCHDOG_INTERVAL_MS)
-                restartScanInternal()
-            }
-        }
+        watchdogJob = null
     }
 
     private fun stopWatchdog() {
@@ -292,20 +291,39 @@ class AndroidMeshScanner(
         watchdogJob = null
     }
 
+    private var recoveryJob: Job? = null
+
     /**
-     * Periodically cycles the BLE scanner (NET-2, Phase 3).
-     * Stops and immediately restarts startScan to reset Android's internal
-     * 30-minute and long-running BLE scan throttling timers, preventing silent packet drops.
+     * Resilient scanner failure recovery (Issue 5).
+     * Schedules an automatic restart with backoff instead of leaving the node permanently blind.
      */
+    fun scheduleScanRecovery(errorCode: Int) {
+        recoveryJob?.cancel()
+        recoveryJob = coroutineScope.launch {
+            val delayMs = if (errorCode == ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED) 2500L else 1500L
+            SecureLog.w(TAG, "Scheduling scanner restart in ${delayMs}ms for error $errorCode...")
+            delay(delayMs)
+            if (!_isScanning.value) {
+                SecureLog.d(TAG, "Attempting automatic scanner recovery restart...")
+                startScan()
+            }
+        }
+    }
+
+    private fun stopRecoveryJob() {
+        recoveryJob?.cancel()
+        recoveryJob = null
+    }
+
     @SuppressLint("MissingPermission")
     fun restartScanInternal() {
         if (!_isScanning.value) return
         val currentScanner = scanner ?: return
         try {
             currentScanner.stopScan(scanCallback)
-            SecureLog.d(TAG, "Watchdog: BLE scan stopped for cycle")
+            SecureLog.d(TAG, "BLE scan stopped for cycle")
         } catch (t: Throwable) {
-            SecureLog.w(TAG, "Watchdog: error stopping BLE scan during cycle: ${t.message}")
+            SecureLog.w(TAG, "Error stopping BLE scan during cycle: ${t.message}")
         }
 
         if (!_isScanning.value) return
@@ -314,9 +332,10 @@ class AndroidMeshScanner(
             val settings = buildScanSettings()
             val filters = emptyList<ScanFilter>()
             currentScanner.startScan(filters, settings, scanCallback)
-            SecureLog.d(TAG, "Watchdog: BLE scan restarted successfully (mode: LOW_LATENCY, AGGRESSIVE)")
+            SecureLog.d(TAG, "BLE scan restarted successfully (mode: LOW_LATENCY, AGGRESSIVE)")
         } catch (t: Throwable) {
-            SecureLog.e(TAG, "Watchdog: error restarting BLE scan during cycle: ${t.message}")
+            SecureLog.e(TAG, "Error restarting BLE scan during cycle: ${t.message}")
         }
     }
 }
+

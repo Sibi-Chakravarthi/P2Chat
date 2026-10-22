@@ -105,7 +105,8 @@ class MeshAdvertiser(
 
         // SCAN RESPONSE DATA: Holds the device name and optional 8-byte peerId in the separate scan response packet
         val scanResponseBuilder = AdvertiseData.Builder()
-            .setIncludeDeviceName(true)
+            .setIncludeDeviceName(false)
+            .setIncludeTxPowerLevel(false)
 
         localPeerId?.let { id ->
             val peerBytes = ByteBuffer.allocate(8).order(ByteOrder.BIG_ENDIAN).putLong(id).array()
