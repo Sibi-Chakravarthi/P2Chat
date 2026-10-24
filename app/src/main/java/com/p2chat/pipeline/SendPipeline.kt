@@ -161,8 +161,9 @@ class SendPipeline(
             )
             messageDao.insertMessage(messageEntity)
 
-            // 7. Record msgId in seen_messages (NET-9)
+            // 7. Record msgId in seen_messages (NET-9, STEP 3.2)
             seenMessageDao.insertIfAbsent(msgId, sentAtMs)
+            com.p2chat.ble.MeshService.sharedGattManager?.recordSentPacket(msgId)
 
             // 8. Store in packet_buffer for store-and-forward relaying
             val expiresAtMs = sentAtMs + MessageLimits.MAX_MESSAGE_AGE_MS
@@ -199,6 +200,7 @@ class SendPipeline(
 
         // 1. Record in seen_messages
         seenMessageDao.insertIfAbsent(header.msgId, nowMs)
+        com.p2chat.ble.MeshService.sharedGattManager?.recordSentPacket(header.msgId)
 
         // 2. Buffer with high priority (PRIORITY_CONTROL)
         val expiresAtMs = nowMs + MessageLimits.MAX_MESSAGE_AGE_MS

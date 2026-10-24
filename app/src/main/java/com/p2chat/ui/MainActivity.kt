@@ -181,7 +181,8 @@ class MainActivity : ComponentActivity() {
             filterService = filterService,
             packetRouter = com.p2chat.ble.DefaultPacketRouter(seenMessageDao, bufferedPacketDao),
             controlPacketHandler = controlPacketHandler,
-            clock = Clock.System
+            clock = Clock.System,
+            peerDao = peerDao
         )
         MeshService.sharedReceivePipeline = receivePipeline
 

@@ -11,7 +11,7 @@ import java.security.PrivateKey
 import java.security.SecureRandom
 
 /**
- * Manages group lifecycle, group keys, and roster state (SEC-8, SEC-10, T1.8).
+ * Manages group lifecycle, group keys, and roster state (SEC-8, SEC-10, T1.8, STEP 3.1).
  * Ensures group keys are always stored wrapped under KeyVault at rest.
  */
 class GroupManager(
@@ -24,7 +24,7 @@ class GroupManager(
 
     /**
      * Creates a new encrypted group with random 4-byte ID, fresh 256-bit key, epoch 1,
-     * and an initial admin-signed roster version 1 (SEC-8).
+     * and an initial admin-signed roster version 1 (SEC-8, STEP 3.1).
      */
     suspend fun createGroup(
         name: String,
@@ -113,7 +113,8 @@ class GroupManager(
     }
 
     /**
-     * Joins a group as a member upon accepting an invite (SEC-9).
+     * Joins or resynchronizes a group as a member upon accepting an invite (SEC-9, STEP 3.1).
+     * If the group exists, cleanly updates key and epoch to resolve any key desync.
      */
     suspend fun joinGroup(
         groupId: Long,
@@ -124,19 +125,33 @@ class GroupManager(
         members: List<RosterMemberInfo>
     ): GroupEntity {
         val existing = groupDao.getGroup(groupId)
-        if (existing != null) {
-            return existing
-        }
         val wrappedGroupKey = keyVault.wrap(rawGroupKey)
-        val groupEntity = GroupEntity(
-            groupId = groupId,
-            name = name,
-            myRole = "MEMBER",
-            currentEpoch = keyEpoch,
-            wrappedCurrentKey = wrappedGroupKey,
-            rosterVersion = rosterVersion
-        )
-        groupDao.insertGroup(groupEntity)
+
+        val groupEntity = if (existing != null) {
+            val keyChanged = !existing.wrappedCurrentKey.contentEquals(wrappedGroupKey)
+            val updated = existing.copy(
+                name = name.ifBlank { existing.name },
+                currentEpoch = maxOf(keyEpoch, existing.currentEpoch),
+                wrappedCurrentKey = wrappedGroupKey,
+                prevEpoch = if (keyChanged) existing.currentEpoch else existing.prevEpoch,
+                wrappedPrevKey = if (keyChanged) existing.wrappedCurrentKey else existing.wrappedPrevKey,
+                rosterVersion = maxOf(rosterVersion, existing.rosterVersion)
+            )
+            groupDao.updateGroup(updated)
+            updated
+        } else {
+            val created = GroupEntity(
+                groupId = groupId,
+                name = name,
+                myRole = "MEMBER",
+                currentEpoch = keyEpoch,
+                wrappedCurrentKey = wrappedGroupKey,
+                rosterVersion = rosterVersion
+            )
+            groupDao.insertGroup(created)
+            created
+        }
+
         val dbMembers = members.map { it.toRosterMember(groupId) }
         rosterMemberDao.insertAll(dbMembers)
         return groupEntity

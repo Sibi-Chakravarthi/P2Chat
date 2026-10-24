@@ -76,7 +76,7 @@ class ChatViewModel(
         val selfFp = identity?.senderFp ?: 0L
         val memberMap = members.associateBy { it.senderFp }
 
-        msgEntities.sortedBy { it.sentAtMs }.map { entity ->
+        msgEntities.distinctBy { it.msgId }.sortedBy { it.sentAtMs }.map { entity ->
             val isSelf = entity.senderFp == selfFp
             val member = memberMap[entity.senderFp]
             val peer = if (!isSelf && member == null) peerDao.getPeer(entity.senderFp) else null

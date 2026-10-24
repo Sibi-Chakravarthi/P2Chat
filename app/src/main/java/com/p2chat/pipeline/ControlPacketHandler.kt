@@ -2,22 +2,21 @@ package com.p2chat.pipeline
 
 import com.p2chat.crypto.envelope.PacketVerdict
 import com.p2chat.crypto.group.GroupManager
-import com.p2chat.crypto.group.RosterCodec
 import com.p2chat.crypto.invite.InviteService
 import com.p2chat.crypto.invite.PairwiseChannel
 import com.p2chat.crypto.keys.IdentityManager
-import com.p2chat.crypto.rotation.KeyRotatePayload
+import com.p2chat.crypto.keys.KeyVault
+import com.p2chat.crypto.rotation.RotationService
 import com.p2chat.data.group.GroupDao
 import com.p2chat.data.group.RosterMemberDao
 import com.p2chat.data.identity.PeerDao
-import com.p2chat.util.SecureLog
-import com.p2chat.crypto.rotation.RotationService
 import com.p2chat.data.message.MessageDao
+import com.p2chat.util.SecureLog
 import com.p2chat.wire.PacketHeader
 import com.p2chat.wire.PacketType
 
 /**
- * Handles control packets (KEY_ROTATE, ROSTER_SYNC, PAIRWISE_INVITE, GROUP_REMOVE_MEMBER) dispatched by ReceivePipeline (T4.2).
+ * Handles control packets (KEY_ROTATE, ROSTER_SYNC, PAIRWISE_INVITE, GROUP_REMOVE_MEMBER) dispatched by ReceivePipeline (T4.2, STEP 3.1).
  */
 class ControlPacketHandler(
     private val groupDao: GroupDao,
@@ -47,10 +46,10 @@ class ControlPacketHandler(
     ) {
         when (verdict.header.packetType) {
             PacketType.KEY_ROTATE -> {
-                handleKeyRotate(verdict)
+                handleKeyRotate(verdict, frameBytes)
             }
             PacketType.ROSTER_SYNC -> {
-                handleRosterSync(verdict)
+                handleRosterSync(verdict, frameBytes)
             }
             PacketType.PAIRWISE_INVITE -> {
                 handlePairwiseInvite(verdict.header, frameBytes)
@@ -64,17 +63,74 @@ class ControlPacketHandler(
         }
     }
 
-    private suspend fun handleKeyRotate(verdict: PacketVerdict.Accept) {
+    private suspend fun handleKeyRotate(verdict: PacketVerdict.Accept, frameBytes: ByteArray) {
         val groupId = verdict.header.groupId
         val newEpoch = verdict.header.keyEpoch
 
         SecureLog.d(TAG, "Processing KEY_ROTATE for group $groupId to epoch $newEpoch")
+        try {
+            if (identityManager != null && peerDao != null) {
+                val adminPeer = peerDao.getPeer(verdict.header.senderFp)
+                val identity = identityManager.getIdentity()
+                if (adminPeer != null && identity != null) {
+                    val ecdhPriv = identityManager.unwrapEcdhPrivateKey(identity)
+                    val pairwiseChannel = PairwiseChannel.derive(ecdhPriv, adminPeer.ecdhPub)
+                    val openResult = RotationService.openKeyRotatePacket(
+                        frameBytes = frameBytes,
+                        adminSigningPubkey = adminPeer.signingPub,
+                        recipientPairwiseChannel = pairwiseChannel
+                    )
+                    if (openResult.isSuccess) {
+                        val (_, keyRotatePayload) = openResult.getOrThrow()
+                        val currentGroup = groupDao.getGroup(groupId)
+                        if (currentGroup != null) {
+                            val keyVault = KeyVault()
+                            val wrappedNewKey = keyVault.wrap(keyRotatePayload.newGroupKey)
+                            val updatedGroup = currentGroup.copy(
+                                currentEpoch = keyRotatePayload.keyEpoch,
+                                wrappedCurrentKey = wrappedNewKey,
+                                prevEpoch = currentGroup.currentEpoch,
+                                wrappedPrevKey = currentGroup.wrappedCurrentKey,
+                                graceExpiresMs = System.currentTimeMillis() + 10 * 60 * 1000L,
+                                rosterVersion = keyRotatePayload.rosterVersion
+                            )
+                            groupDao.updateGroup(updatedGroup)
+                            SecureLog.d(TAG, "Applied KEY_ROTATE: group $groupId updated to epoch ${keyRotatePayload.keyEpoch}")
+                        }
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            SecureLog.w(TAG, "Failed to apply KEY_ROTATE for group $groupId: ${t.message}")
+        }
         onEpochRotated?.invoke(groupId, newEpoch)
     }
 
-    private suspend fun handleRosterSync(verdict: PacketVerdict.Accept) {
+    private suspend fun handleRosterSync(verdict: PacketVerdict.Accept, frameBytes: ByteArray) {
         val groupId = verdict.header.groupId
         SecureLog.d(TAG, "Processing ROSTER_SYNC for group $groupId")
+        try {
+            if (peerDao != null && groupManager != null) {
+                val adminPeer = peerDao.getPeer(verdict.header.senderFp)
+                val group = groupDao.getGroup(groupId)
+                if (adminPeer != null && group != null) {
+                    val keyVault = KeyVault()
+                    val groupKey = keyVault.unwrap(group.wrappedCurrentKey)
+                    val openResult = RotationService.openRosterSyncPacket(
+                        frameBytes = frameBytes,
+                        adminSigningPubkey = adminPeer.signingPub,
+                        groupKey = groupKey
+                    )
+                    if (openResult.isSuccess) {
+                        val (_, signedRoster) = openResult.getOrThrow()
+                        groupManager.applyRosterSync(signedRoster, adminPeer.signingPub)
+                        SecureLog.d(TAG, "Applied ROSTER_SYNC: group $groupId updated to roster version ${signedRoster.rosterVersion}")
+                    }
+                }
+            }
+        } catch (t: Throwable) {
+            SecureLog.w(TAG, "Failed to apply ROSTER_SYNC for group $groupId: ${t.message}")
+        }
     }
 
     private suspend fun handlePairwiseInvite(header: PacketHeader, frameBytes: ByteArray) {
@@ -129,7 +185,6 @@ class ControlPacketHandler(
         try {
             val identity = identityManager.getIdentity() ?: return
 
-            // Admin signing & ECDH public keys: check peerDao or rosterMemberDao
             val adminPeer = peerDao?.getPeer(header.senderFp)
             val adminMember = rosterMemberDao.getMember(header.groupId, header.senderFp)
 
@@ -152,12 +207,15 @@ class ControlPacketHandler(
 
             if (openResult.isSuccess) {
                 val (_, removePayload) = openResult.getOrThrow()
-                if (removePayload.groupId == header.groupId && removePayload.removedSenderFp == identity.senderFp) {
-                    SecureLog.i(TAG, "Local user removed from group ${header.groupId} by admin ${header.senderFp}. Deleting local group data.")
-                    groupDao.deleteGroup(header.groupId)
-                    rosterMemberDao.deleteGroupRoster(header.groupId)
-                    messageDao?.deleteGroupMessages(header.groupId)
-                    onGroupRemoved?.invoke(header.groupId)
+                if (removePayload.removedSenderFp == identity.senderFp) {
+                    SecureLog.d(TAG, "Self removed from group ${removePayload.groupId}. Revoking membership and wiping group...")
+                    groupDao.deleteGroup(removePayload.groupId)
+                    rosterMemberDao.deleteGroupRoster(removePayload.groupId)
+                    messageDao?.deleteGroupMessages(removePayload.groupId)
+                    onGroupRemoved?.invoke(removePayload.groupId)
+                } else {
+                    rosterMemberDao.revokeMember(removePayload.groupId, removePayload.removedSenderFp)
+                    SecureLog.d(TAG, "Revoked member ${removePayload.removedSenderFp} in group ${removePayload.groupId}")
                 }
             } else {
                 SecureLog.w(TAG, "Failed to open GROUP_REMOVE_MEMBER: ${openResult.exceptionOrNull()?.message}")
@@ -165,9 +223,5 @@ class ControlPacketHandler(
         } catch (t: Throwable) {
             SecureLog.w(TAG, "Exception handling GROUP_REMOVE_MEMBER: ${t.message}")
         }
-    }
-
-    suspend fun notifyEpochRotated(groupId: Long, newEpoch: Int) {
-        onEpochRotated?.invoke(groupId, newEpoch)
     }
 }
