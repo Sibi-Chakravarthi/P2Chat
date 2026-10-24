@@ -273,18 +273,29 @@ class GattMeshManager(
             remotePeerIds[address] = targetPeerId
         }
 
-        // 1. Both numeric peer IDs known: Higher ID initiates connection
+        // 1. Both numeric peer IDs known: Higher unsigned ID initiates connection
         if (myId != null && targetPeerId != null) {
-            return myId > targetPeerId
+            return java.lang.Long.compareUnsigned(myId, targetPeerId) > 0
         }
 
-        // 2. Fall back to deterministic string comparison between local identifier and remote MAC
-        val localKey = myId?.toString() ?: (bluetoothAdapter?.address ?: "")
-        return localKey > address
+        // 2. When targetPeerId is null, return true (let in-flight lock and duplicate-connection tie-breaker resolve collision)
+        return true
     }
 
     fun isLocalTieBreakerHigher(address: String, remotePeerIdHint: Long? = null): Boolean {
-        return shouldInitiateConnection(address, remotePeerIdHint)
+        val myId = localPeerId
+        val targetPeerId = remotePeerIdHint
+            ?: remotePeerIds[address]
+            ?: MeshService.sharedScanner?.discoveredPeers?.value?.firstOrNull { it.address == address }?.senderFp
+
+        if (targetPeerId != null) {
+            remotePeerIds[address] = targetPeerId
+        }
+
+        if (myId != null && targetPeerId != null) {
+            return java.lang.Long.compareUnsigned(myId, targetPeerId) > 0
+        }
+        return true
     }
 
     private val activeSinks = ConcurrentHashMap<String, PeerSink>()
@@ -893,7 +904,7 @@ class GattMeshManager(
 
             override suspend fun sendFrame(frameBytes: ByteArray): Boolean {
                 return try {
-                    val negotiatedMtu = negotiatedMtuMap[address] ?: 23
+                    val negotiatedMtu = negotiatedMtuMap[address] ?: 512
                     // STEP 2.4: If negotiated MTU is smaller than 505 bytes, slice into (negotiatedMtu - 3) chunks
                     val maxChunkSize = (negotiatedMtu - 3).coerceIn(20, 509)
                     val chunks = Chunker.chunk(frameBytes, maxChunkSize = maxChunkSize)
@@ -940,7 +951,7 @@ class GattMeshManager(
 
             override suspend fun sendFrame(frameBytes: ByteArray): Boolean = mutex.withLock {
                 try {
-                    val negotiatedMtu = negotiatedMtuMap[address] ?: 23
+                    val negotiatedMtu = negotiatedMtuMap[address] ?: 512
                     val maxChunkSize = (negotiatedMtu - 3).coerceIn(20, 509)
                     val chunks = Chunker.chunk(frameBytes, maxChunkSize = maxChunkSize)
                     var allOk = true

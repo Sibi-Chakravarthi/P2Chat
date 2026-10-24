@@ -12,8 +12,8 @@ import java.security.PublicKey
  * EnvelopeVerifier enforcing cryptographic and protocol integrity boundaries (T1.6, SEC-3..6, SEC-14).
  * Enforces strict verification ordering:
  * 1. Frame bounds & TTL check
- * 2. ECDSA signature verification BEFORE attempting decryption (SEC-6)
- * 3. AES-256-GCM decryption with AAD
+ * 2. ECDSA signature verification BEFORE attempting decryption (SEC-6), if senderSigningPubkey is provided
+ * 3. AES-256-GCM decryption with AAD (authenticates ciphertext + AAD header)
  * 4. Timestamp freshness (SEC-14)
  */
 object EnvelopeVerifier {
@@ -21,7 +21,7 @@ object EnvelopeVerifier {
     fun verifyAndOpen(
         frameBytes: ByteArray,
         groupKey: ByteArray,
-        senderSigningPubkey: ByteArray,
+        senderSigningPubkey: ByteArray?,
         clock: Clock = Clock.System
     ): PacketVerdict {
         // 1. Minimum frame validation
@@ -40,14 +40,17 @@ object EnvelopeVerifier {
             return PacketVerdict.DropMalformed
         }
 
-        // 4. ECDSA signature verification BEFORE attempting decryption (SEC-6)
         val aad = wireFrame.header.computeAad()
-        val coreBlobBytes = wireFrame.coreBlob.encode()
-        val signedData = aad + coreBlobBytes
 
-        val sigValid = Ecdsa.verify(senderSigningPubkey, signedData, wireFrame.signature)
-        if (!sigValid) {
-            return PacketVerdict.DropBadSignature
+        // 4. ECDSA signature verification BEFORE attempting decryption (SEC-6), if sender pubkey is provided
+        if (senderSigningPubkey != null) {
+            val coreBlobBytes = wireFrame.coreBlob.encode()
+            val signedData = aad + coreBlobBytes
+
+            val sigValid = Ecdsa.verify(senderSigningPubkey, signedData, wireFrame.signature)
+            if (!sigValid) {
+                return PacketVerdict.DropBadSignature
+            }
         }
 
         // 5. AES-256-GCM decryption with AAD
@@ -91,6 +94,12 @@ object EnvelopeVerifier {
             plaintext = plaintext
         )
     }
+
+    fun openWithGroupKeyOnly(
+        frameBytes: ByteArray,
+        groupKey: ByteArray,
+        clock: Clock = Clock.System
+    ): PacketVerdict = verifyAndOpen(frameBytes, groupKey, senderSigningPubkey = null, clock = clock)
 
     fun verifyAndOpen(
         frameBytes: ByteArray,

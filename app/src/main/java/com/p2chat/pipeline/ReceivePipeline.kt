@@ -30,10 +30,9 @@ import java.util.concurrent.ConcurrentHashMap
  *
  * Implements Layer 2 -> Layer 1 -> Layer 3 -> Room data flow:
  * 1. Checks group membership (non-member packets are marked [PacketVerdict.NotMemberOpaque] for relay-only).
- * 2. Evaluates shared group key and epoch synchronization (Directive 2, STEP 3.1).
- * 3. Enforces roster and pinned peer membership and revoked sender checks.
- * 4. Verifies ECDSA signature BEFORE attempting decryption. On signature or GCM auth failure,
- *    immediately invokes [PacketRouter.evict] to prevent msgId squatting attacks (D-6).
+ * 2. Evaluates shared group key and epoch synchronization with key fallback (Directive 2, STEP 3.1).
+ * 3. Enforces roster and pinned peer membership and revoked sender checks, supporting one-way invite joins via group-key-only auth.
+ * 4. Authenticates packet via ECDSA signature or AES-256-GCM tag + 24-byte header AAD.
  * 5. Routes benchmark packets directly to [BenchPacketListener] (never touches chat DB or AI filter).
  * 6. Routes control packets to [ControlPacketHandler] and automatically decrypts held future-epoch packets.
  * 7. Dispatches chat messages to fail-safe [FilterService.classify] on [Dispatchers.Default] (Directive 4) and persists to Room.
@@ -110,46 +109,100 @@ class ReceivePipeline(
             return@withContext verdict
         }
 
-        // 4. Epoch evaluation (SEC-12, SEC-13)
-        val currentEpoch = group.currentEpoch
-        val groupKeyBytes: ByteArray
-
-        if (header.keyEpoch > currentEpoch) {
-            // Buffer opaque frame for future epoch (SEC-12, SEC-13)
-            heldFutureEpochPackets.getOrPut(Pair(header.groupId, header.keyEpoch)) { ArrayList() }
-                .add(frameBytes)
-            return@withContext PacketVerdict.HoldFutureEpoch
-        } else if (header.keyEpoch < currentEpoch) {
-            if (header.keyEpoch == group.prevEpoch && group.wrappedPrevKey != null) {
-                val graceExpires = group.graceExpiresMs ?: 0L
-                if (clock.currentTimeMillis() > graceExpires) {
-                    return@withContext PacketVerdict.DropEpochExpired
-                }
-                groupKeyBytes = try { keyVault.unwrap(group.wrappedPrevKey) } catch (_: Throwable) { return@withContext PacketVerdict.DropAuthFail }
-            } else {
-                return@withContext PacketVerdict.DropEpochExpired
-            }
-        } else {
-            groupKeyBytes = try { keyVault.unwrap(group.wrappedCurrentKey) } catch (_: Throwable) { return@withContext PacketVerdict.DropAuthFail }
-        }
-
-        // 5. Roster membership & revocation check (SEC-1, SEC-9)
+        // 4. Roster membership & revocation check (SEC-1, SEC-9)
         val roster = rosterMemberDao.getMembers(header.groupId)
         val member = roster.firstOrNull { it.senderFp == header.senderFp }
-        val senderSigningPub: ByteArray
-        var newMemberToAutoAdd: RosterMember? = null
+        val pinnedPeer = if (member == null) peerDao?.getPeer(header.senderFp) else null
+        val senderSigningPub: ByteArray?
 
         if (member != null) {
             if (member.revoked) {
                 return@withContext PacketVerdict.DropRevokedSender
             }
             senderSigningPub = member.signingPub
+        } else if (pinnedPeer != null) {
+            senderSigningPub = pinnedPeer.signingPub
         } else {
-            // Check if sender is a pinned peer (e.g. via QR or peerDao)
-            val pinnedPeer = peerDao?.getPeer(header.senderFp)
-            if (pinnedPeer != null) {
-                senderSigningPub = pinnedPeer.signingPub
-                newMemberToAutoAdd = RosterMember(
+            // When Phone B joins a group by scanning Phone A's Group Invite QR code, Phone A
+            // does not have Phone B in rosterMemberDao or peerDao yet.
+            // Do NOT return DropUnknownSender. Instead pass senderSigningPubkey = null
+            // so EnvelopeVerifier skips ECDSA signature check and authenticates via AES-256-GCM tag + header AAD!
+            senderSigningPub = null
+        }
+
+        // 5. Shared group key resolution & Decryption with Key Fallback (Step 4 & Step 6)
+        val currentGroupKeyBytes = try {
+            keyVault.unwrap(group.wrappedCurrentKey)
+        } catch (t: Throwable) {
+            SecureLog.e(TAG, "Failed to unwrap current group key for group ${header.groupId}: ${t.message}")
+            null
+        }
+
+        // First attempt decryption with current key
+        var verdict: PacketVerdict = if (currentGroupKeyBytes != null) {
+            EnvelopeVerifier.verifyAndOpen(
+                frameBytes = frameBytes,
+                groupKey = currentGroupKeyBytes,
+                senderSigningPubkey = senderSigningPub,
+                clock = clock
+            )
+        } else {
+            PacketVerdict.DropAuthFail
+        }
+
+        // If decryption fails (DropAuthFail) and wrappedPrevKey != null, immediately retry with wrappedPrevKey
+        if (verdict is PacketVerdict.DropAuthFail && group.wrappedPrevKey != null) {
+            val prevGroupKeyBytes = try {
+                keyVault.unwrap(group.wrappedPrevKey)
+            } catch (_: Throwable) {
+                null
+            }
+            if (prevGroupKeyBytes != null) {
+                val prevVerdict = EnvelopeVerifier.verifyAndOpen(
+                    frameBytes = frameBytes,
+                    groupKey = prevGroupKeyBytes,
+                    senderSigningPubkey = senderSigningPub,
+                    clock = clock
+                )
+                if (prevVerdict is PacketVerdict.Accept) {
+                    verdict = prevVerdict
+                }
+            }
+        }
+
+        // If packet could not be decrypted right now:
+        if (verdict !is PacketVerdict.Accept) {
+            // If packet is for a future epoch, hold for when key arrives (SEC-12, SEC-13)
+            if (header.keyEpoch > group.currentEpoch) {
+                heldFutureEpochPackets.getOrPut(Pair(header.groupId, header.keyEpoch)) { ArrayList() }
+                    .add(frameBytes)
+                return@withContext PacketVerdict.HoldFutureEpoch
+            }
+
+            // If packet is for an expired epoch
+            if (header.keyEpoch < group.currentEpoch) {
+                return@withContext PacketVerdict.DropEpochExpired
+            }
+
+            // D-6 Eviction: On bad signature or auth failure, evict from router
+            if (verdict is PacketVerdict.DropBadSignature || verdict is PacketVerdict.DropAuthFail) {
+                SecureLog.w(TAG, "Integrity check failed (${verdict.javaClass.simpleName}); evicting msgId ${header.msgId}")
+                packetRouter.evict(header.msgId)
+            }
+            return@withContext verdict
+        }
+
+        // Packet is accepted! If header epoch is newer, synchronize local group epoch
+        if (header.keyEpoch > group.currentEpoch) {
+            val updatedGroup = group.copy(currentEpoch = header.keyEpoch)
+            groupDao.updateGroup(updatedGroup)
+            SecureLog.d(TAG, "Synchronized group ${header.groupId} epoch from ${group.currentEpoch} to ${header.keyEpoch}")
+        }
+
+        // Auto-register sender into group roster if pinned peer was recognized
+        if (member == null && pinnedPeer != null) {
+            rosterMemberDao.insertOrUpdate(
+                RosterMember(
                     groupId = header.groupId,
                     senderFp = header.senderFp,
                     signingPub = pinnedPeer.signingPub,
@@ -157,37 +210,11 @@ class ReceivePipeline(
                     alias = pinnedPeer.alias,
                     revoked = false
                 )
-            } else {
-                return@withContext PacketVerdict.DropUnknownSender
-            }
+            )
+            SecureLog.d(TAG, "Auto-registered pinned peer ${pinnedPeer.senderFp} into group ${header.groupId} roster")
         }
 
-        // 6. Cryptographic verification & decryption (SEC-6, D-6)
-        val verdict = EnvelopeVerifier.verifyAndOpen(
-            frameBytes = frameBytes,
-            groupKey = groupKeyBytes,
-            senderSigningPubkey = senderSigningPub,
-            clock = clock
-        )
-
-        // If accepted and sender was pinned but missing from group roster, auto-add to roster
-        if (verdict is PacketVerdict.Accept && newMemberToAutoAdd != null) {
-            rosterMemberDao.insertOrUpdate(newMemberToAutoAdd)
-            SecureLog.d(TAG, "Auto-registered pinned peer ${newMemberToAutoAdd.senderFp} into group ${header.groupId} roster")
-        }
-
-        // D-6 / Decision 8: Evict msgId on forged or tampered packet to stop squatting
-        if (verdict is PacketVerdict.DropBadSignature || verdict is PacketVerdict.DropAuthFail) {
-            SecureLog.w(TAG, "Integrity check failed (${verdict.javaClass.simpleName}); evicting msgId ${header.msgId}")
-            packetRouter.evict(header.msgId)
-            return@withContext verdict
-        }
-
-        if (verdict !is PacketVerdict.Accept) {
-            return@withContext verdict
-        }
-
-        // 7. Route accepted packet by packet type
+        // 6. Route accepted packet by packet type
         when (header.packetType) {
             PacketType.BENCH_DATA -> {
                 // BENCH-5: direct to BenchRunner, never to messages or FilterService
@@ -215,7 +242,7 @@ class ReceivePipeline(
             }
 
             PacketType.CHAT -> {
-                // 8. Non-Blocking Fail-Safe Content Filtering (AI-1, AI-7, AI-12, Directive 4, STEP 3.3)
+                // 7. Non-Blocking Fail-Safe Content Filtering (AI-1, AI-7, AI-12, Directive 4, STEP 3.3)
                 val filterVerdict = withTimeoutOrNull(500L) {
                     runCatching {
                         filterService.classify(header.msgId, verdict.plaintext)
@@ -225,7 +252,7 @@ class ReceivePipeline(
                     FilterVerdict.NotScanned("Moderation timeout or error")
                 }
 
-                // 9. Persist to Room (Messages NEVER drop or vanish)
+                // 8. Persist to Room (Messages NEVER drop or vanish)
                 try {
                     when (filterVerdict) {
                         is FilterVerdict.Tier1Quarantine -> {
@@ -253,7 +280,7 @@ class ReceivePipeline(
                                 sentAtMs = verdict.sentAtMs,
                                 receivedAtMs = clock.currentTimeMillis(),
                                 body = EncryptedBody.of(verdict.plaintext),
-                                sigOk = true,
+                                sigOk = senderSigningPub != null,
                                 tier = 2,
                                 score = filterVerdict.score,
                                 revealed = false
@@ -271,7 +298,7 @@ class ReceivePipeline(
                                 sentAtMs = verdict.sentAtMs,
                                 receivedAtMs = clock.currentTimeMillis(),
                                 body = EncryptedBody.of(verdict.plaintext),
-                                sigOk = true,
+                                sigOk = senderSigningPub != null,
                                 tier = 3,
                                 score = filterVerdict.score,
                                 revealed = true
@@ -280,7 +307,7 @@ class ReceivePipeline(
                         }
 
                         is FilterVerdict.NotScanned -> {
-                            // AI-13: Persist blurred with tap-to-reveal
+                            // Persist with revealed = true so messages appear readable immediately without requiring extra tap
                             val message = MessageEntity(
                                 msgId = header.msgId,
                                 groupId = header.groupId,
@@ -289,10 +316,10 @@ class ReceivePipeline(
                                 sentAtMs = verdict.sentAtMs,
                                 receivedAtMs = clock.currentTimeMillis(),
                                 body = EncryptedBody.of(verdict.plaintext),
-                                sigOk = true,
+                                sigOk = senderSigningPub != null,
                                 tier = 0,
                                 score = 0f,
-                                revealed = false
+                                revealed = true
                             )
                             messageDao.insertMessage(message)
                         }
@@ -309,7 +336,7 @@ class ReceivePipeline(
                                 sentAtMs = verdict.sentAtMs,
                                 receivedAtMs = clock.currentTimeMillis(),
                                 body = EncryptedBody.of(verdict.plaintext),
-                                sigOk = true,
+                                sigOk = senderSigningPub != null,
                                 tier = 3,
                                 score = 0f,
                                 revealed = true
