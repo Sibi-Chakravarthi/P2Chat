@@ -412,4 +412,78 @@ class RotationServiceTest {
 
         assertFalse("Admin removing themselves must fail", result.isSuccess)
     }
+
+    @Test
+    fun testRemoveMemberWithEmptyEcdhPub_SucceedsWithoutThrowing() = runBlocking {
+        val admin = SimulatedNode.create("Admin")
+        val autoRegisteredPeerFp = 0x123456789ABCDEF0L
+
+        val members = listOf(
+            RosterMemberInfo(admin.senderFp, admin.signingPub, admin.ecdhPub, admin.alias, false),
+            RosterMemberInfo(autoRegisteredPeerFp, ByteArray(0), ByteArray(0), "Peer-DEF0", false)
+        )
+        val unsigned = RosterCodec.encodeForSigning(0x7777L, 1, admin.senderFp, members)
+        val sig = com.p2chat.crypto.prim.Ecdsa.sign(admin.signingKeyPair.private, unsigned)
+        val signedRoster = SignedRoster(0x7777L, 1, admin.senderFp, members, sig)
+
+        val rotationService = RotationService()
+        val result = rotationService.removeMember(
+            groupId = 0x7777L,
+            currentEpoch = 1,
+            currentRoster = signedRoster,
+            removedSenderFp = autoRegisteredPeerFp,
+            adminIdentity = admin.identity,
+            adminSigningPrivateKey = admin.signingKeyPair.private,
+            adminEcdhPrivateKey = admin.ecdhKeyPair.private,
+            nowMs = 1700000000000L
+        )
+
+        assertTrue("Removing auto-registered member with empty ecdhPub must succeed", result.isSuccess)
+        val removal = result.getOrThrow()
+        assertEquals(2, removal.newEpoch)
+        assertNotNull("Remove packet must be built with group key fallback", removal.removeMemberPacket)
+
+        // Verify the remove packet can be opened using groupKey
+        val openResult = RotationService.openGroupRemoveMemberPacket(
+            frameBytes = removal.removeMemberPacket!!,
+            adminSigningPubkey = admin.signingPub,
+            groupKey = removal.newGroupKey
+        )
+        assertTrue("Opening remove member packet with group key must succeed", openResult.isSuccess)
+        val (_, payload) = openResult.getOrThrow()
+        assertEquals(autoRegisteredPeerFp, payload.removedSenderFp)
+        assertEquals(0x7777L, payload.groupId)
+    }
+
+    @Test
+    fun testOpenRosterSyncPacketWithEmptyAdminSigningPub_SucceedsViaGroupKey() = runBlocking {
+        val admin = SimulatedNode.create("Admin")
+        val groupKey = ByteArray(32) { 0x33 }
+        val members = listOf(
+            RosterMemberInfo(admin.senderFp, admin.signingPub, admin.ecdhPub, admin.alias, false)
+        )
+        val unsigned = RosterCodec.encodeForSigning(0x8888L, 1, admin.senderFp, members)
+        val sig = com.p2chat.crypto.prim.Ecdsa.sign(admin.signingKeyPair.private, unsigned)
+        val signedRoster = SignedRoster(0x8888L, 1, admin.senderFp, members, sig)
+
+        val syncPacket = RotationService.buildRosterSyncPacket(
+            adminFp = admin.senderFp,
+            adminSigningPrivateKey = admin.signingKeyPair.private,
+            signedRoster = signedRoster,
+            groupKey = groupKey,
+            keyEpoch = 1,
+            sentAtMs = 1000L
+        )
+
+        val openResult = RotationService.openRosterSyncPacket(
+            frameBytes = syncPacket,
+            adminSigningPubkey = ByteArray(0),
+            groupKey = groupKey
+        )
+        assertTrue("Opening ROSTER_SYNC with empty signing pub must succeed via groupKey GCM tag", openResult.isSuccess)
+        val (header, decodedRoster) = openResult.getOrThrow()
+        assertEquals(0x8888L, header.groupId)
+        assertEquals(1, decodedRoster.members.size)
+        assertEquals(admin.senderFp, decodedRoster.members[0].senderFp)
+    }
 }

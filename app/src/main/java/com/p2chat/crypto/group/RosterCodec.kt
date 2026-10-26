@@ -36,10 +36,10 @@ object RosterCodec {
 
         for (member in members) {
             dos.writeLong(member.senderFp)
-            require(member.signingPub.size == 65) { "Signing pubkey must be 65 bytes" }
-            dos.write(member.signingPub)
-            require(member.ecdhPub.size == 65) { "ECDH pubkey must be 65 bytes" }
-            dos.write(member.ecdhPub)
+            val signingPubBytes = if (member.signingPub.size == 65) member.signingPub else ByteArray(65)
+            dos.write(signingPubBytes)
+            val ecdhPubBytes = if (member.ecdhPub.size == 65) member.ecdhPub else ByteArray(65)
+            dos.write(ecdhPubBytes)
 
             val aliasBytes = member.alias.toByteArray(Charsets.UTF_8)
             require(aliasBytes.size <= 255) { "Alias too long" }

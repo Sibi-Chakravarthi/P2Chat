@@ -3,7 +3,9 @@ package com.p2chat.ui.onboarding
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.p2chat.crypto.group.GroupManager
+import com.p2chat.crypto.group.RosterCodec
 import com.p2chat.crypto.group.RosterMemberInfo
+import com.p2chat.crypto.group.SignedRoster
 import com.p2chat.crypto.invite.GroupInviteCodec
 import com.p2chat.crypto.invite.PeerPinning
 import com.p2chat.crypto.invite.PinningVerdict
@@ -11,9 +13,12 @@ import com.p2chat.crypto.invite.QrPayload
 import com.p2chat.crypto.invite.QrPayloadCodec
 import com.p2chat.crypto.keys.EcProvider
 import com.p2chat.crypto.keys.IdentityManager
+import com.p2chat.crypto.prim.Ecdsa
+import com.p2chat.crypto.rotation.RotationService
 import com.p2chat.data.identity.LocalIdentity
 import com.p2chat.data.identity.Peer
 import com.p2chat.data.identity.PeerDao
+import com.p2chat.pipeline.SendPipeline
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +27,8 @@ import kotlinx.coroutines.launch
 class OnboardingViewModel(
     private val identityManager: IdentityManager,
     private val peerDao: PeerDao,
-    private val groupManager: GroupManager? = null
+    private val groupManager: GroupManager? = null,
+    private val sendPipeline: SendPipeline? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<OnboardingUiState>(OnboardingUiState.Idle)
@@ -116,8 +122,7 @@ class OnboardingViewModel(
         }
     }
 
-    fun processScannedQr(qrBase64: String) {
-        viewModelScope.launch {
+    fun processScannedQr(qrBase64: String): kotlinx.coroutines.Job = viewModelScope.launch {
             // 1. Check if optical code is a Group Invite (SEC-9)
             if (GroupInviteCodec.isInvite(qrBase64)) {
                 val inviteResult = GroupInviteCodec.decode(qrBase64)
@@ -159,6 +164,34 @@ class OnboardingViewModel(
                             rosterVersion = 1,
                             members = listOf(adminMember, selfMember)
                         )
+
+                        // Fix B: Immediately broadcast a ROSTER_SYNC control packet over BLE
+                        val signingPrivKey = runCatching { identityManager.unwrapSigningPrivateKey(selfIdentity) }.getOrNull()
+                        if (signingPrivKey != null && sendPipeline != null) {
+                            val unsignedRoster = RosterCodec.encodeForSigning(
+                                groupId = invite.groupId,
+                                rosterVersion = 1,
+                                adminFp = selfIdentity.senderFp,
+                                members = listOf(selfMember)
+                            )
+                            val selfSig = Ecdsa.sign(signingPrivKey, unsignedRoster)
+                            val signedRoster = SignedRoster(
+                                groupId = invite.groupId,
+                                rosterVersion = 1,
+                                adminFp = selfIdentity.senderFp,
+                                members = listOf(selfMember),
+                                signature = selfSig
+                            )
+                            val rosterSyncPacket = RotationService.buildRosterSyncPacket(
+                                adminFp = selfIdentity.senderFp,
+                                adminSigningPrivateKey = signingPrivKey,
+                                signedRoster = signedRoster,
+                                groupKey = invite.groupKey,
+                                keyEpoch = invite.keyEpoch,
+                                sentAtMs = System.currentTimeMillis()
+                            )
+                            sendPipeline.sendControlFrames(listOf(rosterSyncPacket))
+                        }
                     }
                     updateCurrentStateWithScannedPeer(adminPeer, keyConflict = null, joinedGroupName = invite.groupName)
                     return@launch
@@ -188,7 +221,6 @@ class OnboardingViewModel(
                 }
             }
         }
-    }
 
     private fun emitSuccessState(identity: LocalIdentity) {
         val hexFp = EcProvider.senderFpHex(identity.senderFp)

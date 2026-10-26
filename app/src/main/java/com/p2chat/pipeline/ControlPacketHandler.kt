@@ -8,7 +8,9 @@ import com.p2chat.crypto.keys.IdentityManager
 import com.p2chat.crypto.keys.KeyVault
 import com.p2chat.crypto.rotation.RotationService
 import com.p2chat.data.group.GroupDao
+import com.p2chat.data.group.RosterMember
 import com.p2chat.data.group.RosterMemberDao
+import com.p2chat.data.identity.Peer
 import com.p2chat.data.identity.PeerDao
 import com.p2chat.data.message.MessageDao
 import com.p2chat.util.SecureLog
@@ -110,23 +112,62 @@ class ControlPacketHandler(
         val groupId = verdict.header.groupId
         SecureLog.d(TAG, "Processing ROSTER_SYNC for group $groupId")
         try {
-            if (peerDao != null && groupManager != null) {
-                val adminPeer = peerDao.getPeer(verdict.header.senderFp)
-                val group = groupDao.getGroup(groupId)
-                if (adminPeer != null && group != null) {
-                    val keyVault = KeyVault()
-                    val groupKey = keyVault.unwrap(group.wrappedCurrentKey)
-                    val openResult = RotationService.openRosterSyncPacket(
-                        frameBytes = frameBytes,
-                        adminSigningPubkey = adminPeer.signingPub,
-                        groupKey = groupKey
-                    )
-                    if (openResult.isSuccess) {
-                        val (_, signedRoster) = openResult.getOrThrow()
-                        groupManager.applyRosterSync(signedRoster, adminPeer.signingPub)
-                        SecureLog.d(TAG, "Applied ROSTER_SYNC: group $groupId updated to roster version ${signedRoster.rosterVersion}")
+            val group = groupDao.getGroup(groupId) ?: run {
+                SecureLog.w(TAG, "Cannot process ROSTER_SYNC: Group $groupId not found locally")
+                return
+            }
+
+            val keyVault = KeyVault()
+            val groupKey = try {
+                keyVault.unwrap(group.wrappedCurrentKey)
+            } catch (t: Throwable) {
+                SecureLog.w(TAG, "Cannot unwrap groupKey for ROSTER_SYNC: ${t.message}")
+                return
+            }
+
+            val adminPeer = peerDao?.getPeer(verdict.header.senderFp)
+            val existingSender = rosterMemberDao.getMember(groupId, verdict.header.senderFp)
+            val signingPub = adminPeer?.signingPub ?: existingSender?.signingPub ?: ByteArray(0)
+
+            val openResult = RotationService.openRosterSyncPacket(
+                frameBytes = frameBytes,
+                adminSigningPubkey = signingPub,
+                groupKey = groupKey
+            )
+
+            if (openResult.isSuccess) {
+                val (_, signedRoster) = openResult.getOrThrow()
+                SecureLog.d(TAG, "Successfully opened ROSTER_SYNC for group $groupId with ${signedRoster.members.size} members")
+
+                if (signedRoster.rosterVersion > group.rosterVersion) {
+                    groupDao.updateGroup(group.copy(rosterVersion = signedRoster.rosterVersion))
+                }
+
+                // Accept and merge incoming RosterMemberInfo entries from any valid group-key-authenticated ROSTER_SYNC packet
+                for (info in signedRoster.members) {
+                    val existing = rosterMemberDao.getMember(groupId, info.senderFp)
+                    if (existing != null && existing.revoked && !info.revoked) {
+                        SecureLog.w(TAG, "Skipping un-revocation of member ${info.senderFp} in group $groupId")
+                        continue
+                    }
+                    val memberToInsert = info.toRosterMember(groupId)
+                    rosterMemberDao.insertOrUpdate(memberToInsert)
+                    SecureLog.d(TAG, "Merged roster member ${info.alias} (${info.senderFp}) into group $groupId")
+
+                    if (info.signingPub.isNotEmpty() && info.ecdhPub.isNotEmpty() && peerDao != null) {
+                        val peer = Peer(
+                            senderFp = info.senderFp,
+                            signingPub = info.signingPub,
+                            ecdhPub = info.ecdhPub,
+                            alias = info.alias,
+                            verified = true,
+                            firstSeenMs = System.currentTimeMillis()
+                        )
+                        peerDao.pinOrVerifyPeer(peer)
                     }
                 }
+            } else {
+                SecureLog.w(TAG, "Failed to open ROSTER_SYNC: ${openResult.exceptionOrNull()?.message}")
             }
         } catch (t: Throwable) {
             SecureLog.w(TAG, "Failed to apply ROSTER_SYNC for group $groupId: ${t.message}")
@@ -177,32 +218,40 @@ class ControlPacketHandler(
 
     private suspend fun handleGroupRemoveMember(header: PacketHeader, frameBytes: ByteArray) {
         SecureLog.d(TAG, "GROUP_REMOVE_MEMBER received for group ${header.groupId} from ${header.senderFp}")
-        if (identityManager == null) {
+        val idManager = identityManager ?: run {
             SecureLog.w(TAG, "Missing identityManager to process GROUP_REMOVE_MEMBER")
             return
         }
 
         try {
-            val identity = identityManager.getIdentity() ?: return
+            val identity = idManager.getIdentity() ?: return
 
             val adminPeer = peerDao?.getPeer(header.senderFp)
             val adminMember = rosterMemberDao.getMember(header.groupId, header.senderFp)
 
-            val adminSigningPub = adminPeer?.signingPub ?: adminMember?.signingPub
+            val adminSigningPub = adminPeer?.signingPub ?: adminMember?.signingPub ?: ByteArray(0)
             val adminEcdhPub = adminPeer?.ecdhPub ?: adminMember?.ecdhPub
 
-            if (adminSigningPub == null || adminEcdhPub == null) {
-                SecureLog.w(TAG, "Cannot verify GROUP_REMOVE_MEMBER: Admin public keys not found for sender ${header.senderFp}")
-                return
-            }
+            val pairwiseChannel = if (adminEcdhPub != null && adminEcdhPub.isNotEmpty()) {
+                runCatching {
+                    val ecdhPriv = idManager.unwrapEcdhPrivateKey(identity)
+                    PairwiseChannel.derive(ecdhPriv, adminEcdhPub)
+                }.getOrNull()
+            } else null
 
-            val ecdhPriv = identityManager.unwrapEcdhPrivateKey(identity)
-            val pairwiseChannel = PairwiseChannel.derive(ecdhPriv, adminEcdhPub)
+            val group = groupDao.getGroup(header.groupId)
+            val keyVault = KeyVault()
+            val groupKey = group?.let {
+                runCatching { keyVault.unwrap(it.wrappedCurrentKey) }.getOrNull()
+            } ?: group?.wrappedPrevKey?.let {
+                runCatching { keyVault.unwrap(it) }.getOrNull()
+            }
 
             val openResult = RotationService.openGroupRemoveMemberPacket(
                 frameBytes = frameBytes,
                 adminSigningPubkey = adminSigningPub,
-                removedMemberPairwiseChannel = pairwiseChannel
+                removedMemberPairwiseChannel = pairwiseChannel,
+                groupKey = groupKey
             )
 
             if (openResult.isSuccess) {

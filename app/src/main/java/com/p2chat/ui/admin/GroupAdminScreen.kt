@@ -143,10 +143,14 @@ fun GroupAdminScreen(
     if (showScanner) {
         QrScannerScreen(
             onQrScanned = { rawQr ->
-                val result = QrPayloadCodec.decodeFromBase64(rawQr)
-                result.getOrNull()?.let { payload ->
-                    viewModel.addMemberFromQr(payload)
-                    openInviteQrAction()
+                if (GroupInviteCodec.isInvite(rawQr)) {
+                    viewModel.joinGroupFromInvite(rawQr)
+                } else {
+                    val result = QrPayloadCodec.decodeFromBase64(rawQr)
+                    result.getOrNull()?.let { payload ->
+                        viewModel.addMemberFromQr(payload)
+                        openInviteQrAction()
+                    }
                 }
                 showScanner = false
             },

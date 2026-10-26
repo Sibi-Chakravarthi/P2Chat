@@ -11,10 +11,10 @@ class NavigationTest {
     @Test
     fun testNavigationDestinationsAreConfiguredCorrectly() {
         val destinations = NavigationDestination.entries
-        assertEquals(4, destinations.size)
+        assertEquals(3, destinations.size)
 
         val routes = destinations.map { it.route }.toSet()
-        assertEquals(4, routes.size)
+        assertEquals(3, routes.size)
 
         for (dest in destinations) {
             assertFalse(dest.route.isBlank())

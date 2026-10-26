@@ -435,4 +435,49 @@ class GroupAdminViewModelTest {
         val success = state as GroupAdminUiState.Success
         assertFalse("At 16 members, canAddMember must be false", success.canAddMember)
     }
+
+    @Test
+    fun testAdminRemovesAutoRegisteredMember_WithEmptyKeys_SucceedsAndRevokesImmediately() = runTest(testDispatcher) {
+        val autoRegisteredFp = 0x5566778899AABBCCL
+        rosterDao.insertOrUpdate(
+            RosterMember(
+                groupId = groupId,
+                senderFp = autoRegisteredFp,
+                signingPub = ByteArray(0),
+                ecdhPub = ByteArray(0),
+                alias = "Peer-BBCC",
+                revoked = false
+            )
+        )
+
+        val viewModel = GroupAdminViewModel(
+            groupId = groupId,
+            groupDao = groupDao,
+            rosterMemberDao = rosterDao,
+            localIdentityDao = localIdentityDao,
+            peerDao = peerDao,
+            identityManager = identityManager,
+            rotationService = rotationService,
+            sendPipeline = sendPipeline,
+            keyVault = keyVault
+        )
+        advanceUntilIdle()
+
+        // Admin kicks auto-registered member
+        val job = viewModel.removeMember(autoRegisteredFp)
+        job.join()
+        advanceUntilIdle()
+
+        // 1. Verify member is revoked immediately
+        val revokedMember = rosterDao.getMember(groupId, autoRegisteredFp)
+        assertNotNull(revokedMember)
+        assertTrue("Member must be revoked", revokedMember!!.revoked)
+
+        // 2. Epoch incremented to 2
+        val updatedGroup = groupDao.getGroup(groupId)!!
+        assertEquals(2, updatedGroup.currentEpoch)
+
+        // 3. Control packets sent without crashing on empty ecdhPub
+        assertTrue("Buffered packets must contain control frames", bufferedPacketDao.countBuffer() >= 3)
+    }
 }

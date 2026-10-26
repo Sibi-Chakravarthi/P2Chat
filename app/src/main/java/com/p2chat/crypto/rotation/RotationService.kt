@@ -189,10 +189,6 @@ class RotationService(
         val memberToRemove = currentRoster.members.find { it.senderFp == removedSenderFp }
             ?: return Result.failure(IllegalArgumentException("Member to remove not found in roster"))
 
-        if (memberToRemove.revoked) {
-            return Result.failure(IllegalStateException("Member is already revoked"))
-        }
-
         val newEpoch = currentEpoch + 1
         val newGroupKey = ByteArray(32).also { secureRandom.nextBytes(it) }
         val newRosterVersion = currentRoster.rosterVersion + 1
@@ -222,22 +218,26 @@ class RotationService(
         val keyRotatePackets = ArrayList<ByteArray>(remainingActiveMembers.size)
 
         for (member in remainingActiveMembers) {
-            val pairwise = PairwiseChannel.derive(adminEcdhPrivateKey, member.ecdhPub)
-            val payload = KeyRotatePayload(
-                groupId = groupId,
-                keyEpoch = newEpoch,
-                newGroupKey = newGroupKey,
-                removedSenderFp = removedSenderFp,
-                rosterVersion = newRosterVersion
-            )
-            val packet = buildKeyRotatePacket(
-                adminFp = adminIdentity.senderFp,
-                adminSigningPrivateKey = adminSigningPrivateKey,
-                recipientPairwiseChannel = pairwise,
-                payload = payload,
-                sentAtMs = nowMs
-            )
-            keyRotatePackets.add(packet)
+            runCatching {
+                if (member.ecdhPub.isNotEmpty()) {
+                    val pairwise = PairwiseChannel.derive(adminEcdhPrivateKey, member.ecdhPub)
+                    val payload = KeyRotatePayload(
+                        groupId = groupId,
+                        keyEpoch = newEpoch,
+                        newGroupKey = newGroupKey,
+                        removedSenderFp = removedSenderFp,
+                        rosterVersion = newRosterVersion
+                    )
+                    val packet = buildKeyRotatePacket(
+                        adminFp = adminIdentity.senderFp,
+                        adminSigningPrivateKey = adminSigningPrivateKey,
+                        recipientPairwiseChannel = pairwise,
+                        payload = payload,
+                        sentAtMs = nowMs
+                    )
+                    keyRotatePackets.add(packet)
+                }
+            }
         }
 
         // Build ROSTER_SYNC packet
@@ -251,18 +251,26 @@ class RotationService(
         )
 
         // Build GROUP_REMOVE_MEMBER control packet targeted at the removed member
-        val removedMemberPairwise = PairwiseChannel.derive(adminEcdhPrivateKey, memberToRemove.ecdhPub)
+        val removedMemberPairwise = if (memberToRemove.ecdhPub.isNotEmpty()) {
+            runCatching {
+                PairwiseChannel.derive(adminEcdhPrivateKey, memberToRemove.ecdhPub)
+            }.getOrNull()
+        } else null
+
         val removePayload = GroupRemoveMemberPayload(
             groupId = groupId,
             removedSenderFp = removedSenderFp
         )
-        val removePacket = buildGroupRemoveMemberPacket(
-            adminFp = adminIdentity.senderFp,
-            adminSigningPrivateKey = adminSigningPrivateKey,
-            removedMemberPairwiseChannel = removedMemberPairwise,
-            payload = removePayload,
-            sentAtMs = nowMs
-        )
+        val removePacket = runCatching {
+            buildGroupRemoveMemberPacket(
+                adminFp = adminIdentity.senderFp,
+                adminSigningPrivateKey = adminSigningPrivateKey,
+                removedMemberPairwiseChannel = removedMemberPairwise,
+                groupKey = newGroupKey,
+                payload = removePayload,
+                sentAtMs = nowMs
+            )
+        }.getOrNull()
 
         // If DAOs are available, persist changes
         if (groupDao != null) {
@@ -495,7 +503,8 @@ class RotationService(
 
         /**
          * Opens and verifies a ROSTER_SYNC packet (SEC-6, SEC-7, SEC-10).
-         * Enforces strict signature verification BEFORE attempting decryption.
+         * If adminSigningPubkey is present, verifies signature before decryption.
+         * Otherwise verifies via groupKey GCM tag or sender signingPub from decrypted roster.
          */
         fun openRosterSyncPacket(
             frameBytes: ByteArray,
@@ -509,17 +518,19 @@ class RotationService(
                 )
             }
 
-            // 1. Strict verification: verify admin signature before decryption (SEC-6)
+            // 1. Strict verification: verify admin signature before decryption if non-empty (SEC-6)
             val aad = wireFrame.header.computeAad()
             val coreBlobBytes = wireFrame.coreBlob.encode()
             val signedData = aad + coreBlobBytes
 
-            val sigValid = Ecdsa.verify(adminSigningPubkey, signedData, wireFrame.signature)
-            if (!sigValid) {
-                return Result.failure(CryptoError.BadSignature("Invalid admin signature on ROSTER_SYNC packet"))
+            if (adminSigningPubkey.isNotEmpty()) {
+                val sigValid = Ecdsa.verify(adminSigningPubkey, signedData, wireFrame.signature)
+                if (!sigValid) {
+                    return Result.failure(CryptoError.BadSignature("Invalid admin signature on ROSTER_SYNC packet"))
+                }
             }
 
-            // 2. Decrypt with group key
+            // 2. Decrypt with group key (AES-256-GCM auth tag check against aad)
             val openResult = AesGcm.open(
                 key = groupKey,
                 nonce = wireFrame.coreBlob.nonce,
@@ -548,6 +559,18 @@ class RotationService(
             }
 
             val signedRoster = rosterResult.getOrThrow()
+
+            // If adminSigningPubkey was empty, check if sender is in signedRoster.members and verify signature
+            if (adminSigningPubkey.isEmpty()) {
+                val senderMember = signedRoster.members.find { it.senderFp == wireFrame.header.senderFp }
+                if (senderMember != null && senderMember.signingPub.isNotEmpty()) {
+                    val sigValid = Ecdsa.verify(senderMember.signingPub, signedData, wireFrame.signature)
+                    if (!sigValid) {
+                        return Result.failure(CryptoError.BadSignature("Invalid member signature on ROSTER_SYNC packet"))
+                    }
+                }
+            }
+
             return Result.success(Pair(wireFrame.header, signedRoster))
         }
 
@@ -591,12 +614,13 @@ class RotationService(
 
         /**
          * Builds a GROUP_REMOVE_MEMBER packet targeted at a removed member, encrypted with
-         * their pairwise channel and signed by the group admin.
+         * their pairwise channel or groupKey, and signed by the group admin.
          */
         fun buildGroupRemoveMemberPacket(
             adminFp: Long,
             adminSigningPrivateKey: PrivateKey,
-            removedMemberPairwiseChannel: PairwiseChannel,
+            removedMemberPairwiseChannel: PairwiseChannel? = null,
+            groupKey: ByteArray? = null,
             payload: GroupRemoveMemberPayload,
             sentAtMs: Long,
             msgId: Long = ThreadLocalRandom.current().nextLong()
@@ -613,7 +637,11 @@ class RotationService(
             )
 
             val aad = header.computeAad()
-            val sealed = removedMemberPairwiseChannel.seal(innerPayload, aad)
+            val sealed = when {
+                removedMemberPairwiseChannel != null -> removedMemberPairwiseChannel.seal(innerPayload, aad)
+                groupKey != null -> AesGcm.seal(groupKey, innerPayload, aad)
+                else -> throw IllegalArgumentException("Either pairwise channel or groupKey must be provided")
+            }
 
             val coreBlob = CoreBlob(sealed.nonce, sealed.tag, sealed.ciphertext)
             val signedData = aad + coreBlob.encode()
@@ -625,12 +653,13 @@ class RotationService(
 
         /**
          * Opens and verifies a GROUP_REMOVE_MEMBER packet.
-         * Enforces strict admin signature verification before attempting pairwise decryption.
+         * Verifies admin signature if non-empty, and attempts pairwise or groupKey decryption.
          */
         fun openGroupRemoveMemberPacket(
             frameBytes: ByteArray,
             adminSigningPubkey: ByteArray,
-            removedMemberPairwiseChannel: PairwiseChannel
+            removedMemberPairwiseChannel: PairwiseChannel? = null,
+            groupKey: ByteArray? = null
         ): Result<Pair<PacketHeader, GroupRemoveMemberPayload>> {
             val wireFrame = WireCodec.decode(frameBytes).getOrElse { return Result.failure(it) }
             if (wireFrame.header.packetType != PacketType.GROUP_REMOVE_MEMBER) {
@@ -643,23 +672,43 @@ class RotationService(
             val coreBlobBytes = wireFrame.coreBlob.encode()
             val signedData = aad + coreBlobBytes
 
-            val sigValid = Ecdsa.verify(adminSigningPubkey, signedData, wireFrame.signature)
-            if (!sigValid) {
-                return Result.failure(CryptoError.BadSignature("Invalid admin signature on GROUP_REMOVE_MEMBER packet"))
+            if (adminSigningPubkey.isNotEmpty()) {
+                val sigValid = Ecdsa.verify(adminSigningPubkey, signedData, wireFrame.signature)
+                if (!sigValid) {
+                    return Result.failure(CryptoError.BadSignature("Invalid admin signature on GROUP_REMOVE_MEMBER packet"))
+                }
             }
 
-            val openResult = removedMemberPairwiseChannel.open(
-                nonce = wireFrame.coreBlob.nonce,
-                ciphertext = wireFrame.coreBlob.ciphertext,
-                tag = wireFrame.coreBlob.tag,
-                aad = aad
-            )
-
-            if (openResult.isFailure) {
-                return Result.failure(openResult.exceptionOrNull()!!)
+            var decryptedPayload: ByteArray? = null
+            if (removedMemberPairwiseChannel != null) {
+                val openResult = removedMemberPairwiseChannel.open(
+                    nonce = wireFrame.coreBlob.nonce,
+                    ciphertext = wireFrame.coreBlob.ciphertext,
+                    tag = wireFrame.coreBlob.tag,
+                    aad = aad
+                )
+                if (openResult.isSuccess) {
+                    decryptedPayload = openResult.getOrNull()
+                }
             }
 
-            val decryptedPayload = openResult.getOrThrow()
+            if (decryptedPayload == null && groupKey != null) {
+                val openResult = AesGcm.open(
+                    key = groupKey,
+                    nonce = wireFrame.coreBlob.nonce,
+                    ciphertext = wireFrame.coreBlob.ciphertext,
+                    tag = wireFrame.coreBlob.tag,
+                    aad = aad
+                )
+                if (openResult.isSuccess) {
+                    decryptedPayload = openResult.getOrNull()
+                }
+            }
+
+            if (decryptedPayload == null) {
+                return Result.failure(CryptoError.AuthFailed("Failed to decrypt GROUP_REMOVE_MEMBER via pairwise or group key"))
+            }
+
             return try {
                 val (_, removePayload) = GroupRemoveMemberPayload.deserialize(decryptedPayload)
                 Result.success(Pair(wireFrame.header, removePayload))

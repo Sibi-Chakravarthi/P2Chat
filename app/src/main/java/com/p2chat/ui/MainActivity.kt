@@ -44,7 +44,6 @@ import com.p2chat.ai.model.TfliteEmbedder
 import com.p2chat.ai.score.Scorer
 import com.p2chat.ai.score.VectorStore
 import com.p2chat.ai.text.WordPieceTokenizer
-import com.p2chat.bench.BenchRunner
 import com.p2chat.ble.BlePermissions
 import com.p2chat.ble.BleState
 import com.p2chat.ble.DefaultMeshScanner
@@ -61,8 +60,6 @@ import com.p2chat.ui.admin.GroupAdminScreen
 import com.p2chat.ui.admin.GroupAdminViewModel
 import com.p2chat.ui.aifilter.AiFilterScreen
 import com.p2chat.ui.aifilter.AiFilterViewModel
-import com.p2chat.ui.bench.BenchScreen
-import com.p2chat.ui.bench.BenchViewModel
 import com.p2chat.ui.chat.ChatScreen
 import com.p2chat.ui.chat.ChatViewModel
 import com.p2chat.ui.common.LoadingState
@@ -102,13 +99,11 @@ class MainActivity : ComponentActivity() {
         val messageDao = database.messageDao()
         val quarantineDao = database.quarantineDao()
         val blockedVectorDao = database.blockedVectorDao()
-        val benchDao = database.benchDao()
         val bufferedPacketDao = database.bufferedPacketDao()
         val seenMessageDao = database.seenMessageDao()
         val settingDao = database.settingDao()
 
         val groupManager = GroupManager(groupDao, rosterMemberDao, keyVault)
-        val onboardingViewModel = OnboardingViewModel(identityManager, peerDao, groupManager)
 
         val initialBleState = BlePermissions.getBleState(this)
         val groupListViewModel = GroupListViewModel(
@@ -130,6 +125,8 @@ class MainActivity : ComponentActivity() {
             keyVault = keyVault,
             meshTransport = meshTransport
         )
+
+        val onboardingViewModel = OnboardingViewModel(identityManager, peerDao, groupManager, sendPipeline)
 
         val filterService = try {
             FilterService.create(this, database)
@@ -169,7 +166,10 @@ class MainActivity : ComponentActivity() {
             identityManager = identityManager,
             peerDao = peerDao,
             groupManager = groupManager,
-            messageDao = messageDao
+            messageDao = messageDao,
+            onGroupRemoved = { gid ->
+                SecureLog.d(TAG, "Device removed from group $gid; resetting view")
+            }
         )
 
         val receivePipeline = ReceivePipeline(
@@ -185,14 +185,6 @@ class MainActivity : ComponentActivity() {
             peerDao = peerDao
         )
         MeshService.sharedReceivePipeline = receivePipeline
-
-        val benchRunner = BenchRunner(
-            benchDao = benchDao,
-            meshTransport = meshTransport,
-            identityManager = identityManager,
-            filterService = filterService
-        )
-        val benchViewModel = BenchViewModel(benchRunner, benchDao)
 
         val connectionPool = MeshService.sharedConnectionPool
         val meshController = MeshService.sharedMeshController
@@ -235,7 +227,6 @@ class MainActivity : ComponentActivity() {
                     groupListViewModel = groupListViewModel,
                     radarViewModel = radarViewModel,
                     aiFilterViewModel = aiFilterViewModel,
-                    benchViewModel = benchViewModel,
                     sendPipeline = sendPipeline,
                     rotationService = rotationService,
                     keyVault = keyVault,
@@ -256,7 +247,6 @@ fun P2ChatMainApp(
     groupListViewModel: GroupListViewModel,
     radarViewModel: RadarViewModel,
     aiFilterViewModel: AiFilterViewModel,
-    benchViewModel: BenchViewModel,
     sendPipeline: SendPipeline,
     rotationService: RotationService,
     keyVault: KeyVault,
@@ -299,7 +289,6 @@ fun P2ChatMainApp(
                 onboardingViewModel = onboardingViewModel,
                 radarViewModel = radarViewModel,
                 aiFilterViewModel = aiFilterViewModel,
-                benchViewModel = benchViewModel,
                 sendPipeline = sendPipeline,
                 rotationService = rotationService,
                 keyVault = keyVault,
@@ -320,7 +309,6 @@ fun P2ChatAppShell(
     onboardingViewModel: OnboardingViewModel,
     radarViewModel: RadarViewModel,
     aiFilterViewModel: AiFilterViewModel,
-    benchViewModel: BenchViewModel,
     sendPipeline: SendPipeline,
     rotationService: RotationService,
     keyVault: KeyVault,
@@ -454,9 +442,6 @@ fun P2ChatAppShell(
                 NavigationDestination.AI_FILTER -> AiFilterScreen(
                     viewModel = aiFilterViewModel,
                     onProfileClick = { showIdentityProfile = true }
-                )
-                NavigationDestination.BENCH -> BenchScreen(
-                    viewModel = benchViewModel
                 )
             }
         }

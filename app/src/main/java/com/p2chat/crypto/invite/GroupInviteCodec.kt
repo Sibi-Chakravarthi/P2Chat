@@ -1,6 +1,5 @@
 package com.p2chat.crypto.invite
 
-import android.util.Base64
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -64,7 +63,7 @@ object GroupInviteCodec {
         dos.write(data.adminEcdhPub)
         dos.writeUTF(data.adminAlias)
         dos.flush()
-        return PREFIX + Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP)
+        return PREFIX + java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(baos.toByteArray())
     }
 
     fun isInvite(qrString: String): Boolean = qrString.startsWith(PREFIX)
@@ -75,7 +74,11 @@ object GroupInviteCodec {
         }
         return try {
             val base64 = qrString.removePrefix(PREFIX)
-            val bytes = Base64.decode(base64, Base64.NO_WRAP)
+            val bytes = try {
+                java.util.Base64.getUrlDecoder().decode(base64)
+            } catch (_: Exception) {
+                java.util.Base64.getDecoder().decode(base64)
+            }
             val dis = DataInputStream(ByteArrayInputStream(bytes))
             val groupId = dis.readLong()
             val groupName = dis.readUTF()

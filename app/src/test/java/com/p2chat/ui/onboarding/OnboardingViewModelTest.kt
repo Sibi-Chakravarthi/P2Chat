@@ -246,4 +246,158 @@ class OnboardingViewModelTest {
             assertNull("Random alias must have no error", viewModel.aliasError.value)
         }
     }
+
+    @Test
+    fun testScanGroupInvite_joinsGroupAndBroadcastsRosterSync() = runTest(testDispatcher) {
+        javax.crypto.spec.SecretKeySpec(ByteArray(32) { 0x01 }, "AES").let {
+            com.p2chat.crypto.keys.KeyVault.testKeyOverride = it
+        }
+        val keyVault = com.p2chat.crypto.keys.KeyVault()
+        val fakeIdentityDao = FakeLocalIdentityDao()
+        val fakePeerDao = FakePeerDao()
+
+        // Create self identity
+        val selfKp = SoftwareEcProvider.generateKeyPair()
+        val selfPub = EcProvider.encodeUncompressedPublicKey(selfKp.public)
+        val selfFp = EcProvider.computeSenderFp(selfPub)
+        val selfIdentity = LocalIdentity(
+            senderFp = selfFp,
+            alias = "SelfUser",
+            signingPub = selfPub,
+            ecdhPub = selfPub,
+            wrappedSigningPriv = keyVault.wrap(selfKp.private.encoded),
+            wrappedEcdhPriv = keyVault.wrap(selfKp.private.encoded)
+        )
+        fakeIdentityDao.insertIdentity(selfIdentity)
+        val identityManager = IdentityManager(fakeIdentityDao, keyVault)
+
+        // Mock DAOs for GroupManager & SendPipeline
+        val groups = mutableMapOf<Long, com.p2chat.data.group.GroupEntity>()
+        val fakeGroupDao = object : com.p2chat.data.group.GroupDao {
+            override suspend fun insertGroup(group: com.p2chat.data.group.GroupEntity): Long {
+                groups[group.groupId] = group
+                return group.groupId
+            }
+            override suspend fun getGroup(groupId: Long) = groups[groupId]
+            override fun observeGroup(groupId: Long) = flowOf(groups[groupId])
+            override fun observeAllGroups() = flowOf(groups.values.toList())
+            override suspend fun getAllGroups() = groups.values.toList()
+            override suspend fun updateGroup(group: com.p2chat.data.group.GroupEntity): Int {
+                groups[group.groupId] = group
+                return 1
+            }
+            override suspend fun deleteGroup(groupId: Long) = 0
+            override suspend fun count() = groups.size
+        }
+
+        val members = mutableMapOf<Pair<Long, Long>, com.p2chat.data.group.RosterMember>()
+        val fakeRosterDao = object : com.p2chat.data.group.RosterMemberDao {
+            override suspend fun insertOrUpdate(member: com.p2chat.data.group.RosterMember): Long {
+                members[Pair(member.groupId, member.senderFp)] = member
+                return member.senderFp
+            }
+            override suspend fun insertAll(memberList: List<com.p2chat.data.group.RosterMember>) {
+                memberList.forEach { members[Pair(it.groupId, it.senderFp)] = it }
+            }
+            override suspend fun getMember(groupId: Long, senderFp: Long) = members[Pair(groupId, senderFp)]
+            override fun observeMembers(groupId: Long) = flowOf(members.values.filter { it.groupId == groupId })
+            override suspend fun getMembers(groupId: Long) = members.values.filter { it.groupId == groupId }
+            override suspend fun getActiveMembers(groupId: Long) = members.values.filter { it.groupId == groupId && !it.revoked }
+            override suspend fun revokeMember(groupId: Long, senderFp: Long): Int {
+                val m = members[Pair(groupId, senderFp)] ?: return 0
+                members[Pair(groupId, senderFp)] = m.copy(revoked = true)
+                return 1
+            }
+            override suspend fun deleteMember(groupId: Long, senderFp: Long) = 0
+            override suspend fun deleteGroupRoster(groupId: Long) = 0
+            override suspend fun countActiveMembers(groupId: Long) = members.values.count { it.groupId == groupId && !it.revoked }
+        }
+
+        val groupManager = com.p2chat.crypto.group.GroupManager(fakeGroupDao, fakeRosterDao, keyVault)
+
+        val bufferedPackets = mutableListOf<com.p2chat.data.mesh.BufferedPacket>()
+        val fakeBufferedPacketDao = object : com.p2chat.data.mesh.BufferedPacketDao {
+            override suspend fun insertIgnore(packet: com.p2chat.data.mesh.BufferedPacket): Long {
+                bufferedPackets.add(packet)
+                return packet.msgId
+            }
+            override suspend fun delete(msgId: Long): Int = 0
+            override suspend fun purgeExpired(nowMs: Long): Int = 0
+            override suspend fun countBuffer(): Int = bufferedPackets.size
+            override fun observeBufferCount(): Flow<Int> = flowOf(bufferedPackets.size)
+            override suspend fun allMsgIds(): List<Long> = bufferedPackets.map { it.msgId }
+            override suspend fun getPacket(msgId: Long): com.p2chat.data.mesh.BufferedPacket? = bufferedPackets.find { it.msgId == msgId }
+            override suspend fun getPacketsToForward(limit: Int): List<com.p2chat.data.mesh.BufferedPacket> = bufferedPackets.take(limit)
+            override suspend fun clearAll(): Int = 0
+        }
+
+        val fakeSeenMessageDao = object : com.p2chat.data.mesh.SeenMessageDao {
+            override suspend fun insertIgnore(seen: com.p2chat.data.mesh.SeenMessage): Long = 1L
+            override suspend fun delete(msgId: Long): Int = 0
+            override suspend fun purgeExpired(cutoffMs: Long): Int = 0
+            override suspend fun allMsgIds(): List<Long> = emptyList()
+            override suspend fun count(): Int = 0
+            override suspend fun exists(msgId: Long): Boolean = false
+        }
+        val fakeMessageDao = object : com.p2chat.data.message.MessageDao {
+            override suspend fun insertMessage(message: com.p2chat.data.message.MessageEntity): Long = 1L
+            override fun observeMessagesForGroup(groupId: Long): Flow<List<com.p2chat.data.message.MessageEntity>> = flowOf(emptyList())
+            override suspend fun getMessagesForGroup(groupId: Long): List<com.p2chat.data.message.MessageEntity> = emptyList()
+            override suspend fun getMessage(msgId: Long): com.p2chat.data.message.MessageEntity? = null
+            override suspend fun setRevealed(msgId: Long, revealed: Boolean): Int = 1
+            override suspend fun deleteMessage(msgId: Long): Int = 0
+            override suspend fun deleteGroupMessages(groupId: Long): Int = 0
+            override suspend fun count(): Int = 0
+            override suspend fun countForGroup(groupId: Long): Int = 0
+        }
+
+        val sendPipeline = com.p2chat.pipeline.SendPipeline(
+            groupDao = fakeGroupDao,
+            localIdentityDao = fakeIdentityDao,
+            messageDao = fakeMessageDao,
+            seenMessageDao = fakeSeenMessageDao,
+            bufferedPacketDao = fakeBufferedPacketDao,
+            keyVault = keyVault
+        )
+
+        val viewModel = OnboardingViewModel(
+            identityManager = identityManager,
+            peerDao = fakePeerDao,
+            groupManager = groupManager,
+            sendPipeline = sendPipeline
+        )
+
+        // Admin invite QR payload
+        val adminKp = SoftwareEcProvider.generateKeyPair()
+        val adminPub = EcProvider.encodeUncompressedPublicKey(adminKp.public)
+        val adminFp = EcProvider.computeSenderFp(adminPub)
+        val inviteData = com.p2chat.crypto.invite.GroupInviteData(
+            groupId = 0x9999L,
+            groupName = "Alpha Squad",
+            groupKey = ByteArray(32) { 0x44 },
+            keyEpoch = 1,
+            adminFp = adminFp,
+            adminSigningPub = adminPub,
+            adminEcdhPub = adminPub,
+            adminAlias = "AlphaAdmin"
+        )
+        val inviteQr = com.p2chat.crypto.invite.GroupInviteCodec.encode(inviteData)
+
+        // Process scanned invite QR
+        val job = viewModel.processScannedQr(inviteQr)
+        job.join()
+        advanceUntilIdle()
+
+        // Verify group joined
+        assertNotNull(fakeGroupDao.getGroup(0x9999L))
+        assertEquals(2, fakeRosterDao.getMembers(0x9999L).size)
+
+        // Verify ROSTER_SYNC broadcasted via sendPipeline into bufferedPacketDao
+        assertEquals("ROSTER_SYNC packet must be queued in send buffer", 1, fakeBufferedPacketDao.countBuffer())
+        val queuedPacket = bufferedPackets.first()
+        val wireFrame = com.p2chat.wire.WireCodec.decode(queuedPacket.frame).getOrThrow()
+        assertEquals(com.p2chat.wire.PacketType.ROSTER_SYNC, wireFrame.header.packetType)
+        assertEquals(0x9999L, wireFrame.header.groupId)
+        assertEquals(selfFp, wireFrame.header.senderFp)
+    }
 }

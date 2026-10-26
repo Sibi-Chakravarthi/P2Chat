@@ -53,8 +53,6 @@ class ReceivePipeline(
         private const val TAG = "ReceivePipeline"
     }
 
-    var benchListener: BenchPacketListener? = null
-
     // Buffer for holding packets arriving for future epochs before key rotation completes
     private val heldFutureEpochPackets = ConcurrentHashMap<Pair<Long, Int>, MutableList<ByteArray>>()
 
@@ -110,24 +108,16 @@ class ReceivePipeline(
         }
 
         // 4. Roster membership & revocation check (SEC-1, SEC-9)
-        val roster = rosterMemberDao.getMembers(header.groupId)
-        val member = roster.firstOrNull { it.senderFp == header.senderFp }
-        val pinnedPeer = if (member == null) peerDao?.getPeer(header.senderFp) else null
-        val senderSigningPub: ByteArray?
+        val existingMember = rosterMemberDao.getMember(header.groupId, header.senderFp)
+        if (existingMember != null && existingMember.revoked) {
+            return@withContext PacketVerdict.DropRevokedSender
+        }
 
-        if (member != null) {
-            if (member.revoked) {
-                return@withContext PacketVerdict.DropRevokedSender
-            }
-            senderSigningPub = member.signingPub
-        } else if (pinnedPeer != null) {
-            senderSigningPub = pinnedPeer.signingPub
-        } else {
-            // When Phone B joins a group by scanning Phone A's Group Invite QR code, Phone A
-            // does not have Phone B in rosterMemberDao or peerDao yet.
-            // Do NOT return DropUnknownSender. Instead pass senderSigningPubkey = null
-            // so EnvelopeVerifier skips ECDSA signature check and authenticates via AES-256-GCM tag + header AAD!
-            senderSigningPub = null
+        val pinnedPeer = if (existingMember == null) peerDao?.getPeer(header.senderFp) else null
+        val senderSigningPub: ByteArray? = when {
+            existingMember != null && existingMember.signingPub.isNotEmpty() -> existingMember.signingPub
+            pinnedPeer != null && pinnedPeer.signingPub.isNotEmpty() -> pinnedPeer.signingPub
+            else -> null
         }
 
         // 5. Shared group key resolution & Decryption with Key Fallback (Step 4 & Step 6)
@@ -199,9 +189,9 @@ class ReceivePipeline(
             SecureLog.d(TAG, "Synchronized group ${header.groupId} epoch from ${group.currentEpoch} to ${header.keyEpoch}")
         }
 
-        // Auto-register sender into group roster if pinned peer was recognized
-        if (member == null && pinnedPeer != null) {
-            rosterMemberDao.insertOrUpdate(
+        // Auto-register sender into group roster (Fix A)
+        if (existingMember == null) {
+            val newMember = if (pinnedPeer != null) {
                 RosterMember(
                     groupId = header.groupId,
                     senderFp = header.senderFp,
@@ -210,29 +200,24 @@ class ReceivePipeline(
                     alias = pinnedPeer.alias,
                     revoked = false
                 )
-            )
-            SecureLog.d(TAG, "Auto-registered pinned peer ${pinnedPeer.senderFp} into group ${header.groupId} roster")
+            } else {
+                RosterMember(
+                    groupId = header.groupId,
+                    senderFp = header.senderFp,
+                    signingPub = ByteArray(0),
+                    ecdhPub = ByteArray(0),
+                    alias = "Peer-${java.lang.Long.toUnsignedString(header.senderFp, 16).takeLast(4).uppercase()}",
+                    revoked = false
+                )
+            }
+            rosterMemberDao.insertOrUpdate(newMember)
+            SecureLog.d(TAG, "Auto-registered member ${header.senderFp} (${newMember.alias}) into group ${header.groupId} roster")
         }
 
         // 6. Route accepted packet by packet type
         when (header.packetType) {
-            PacketType.BENCH_DATA -> {
-                // BENCH-5: direct to BenchRunner, never to messages or FilterService
-                benchListener?.onBenchData(
-                    msgId = header.msgId,
-                    initialTtl = header.ttl,
-                    receivedTtl = header.ttl,
-                    payload = frameBytes
-                )
-                return@withContext verdict
-            }
-
-            PacketType.BENCH_ACK -> {
-                benchListener?.onBenchAck(
-                    msgId = header.msgId,
-                    receivedTtl = header.ttl,
-                    ackMonoNs = System.nanoTime()
-                )
+            PacketType.BENCH_DATA, PacketType.BENCH_ACK -> {
+                // Benchmark packets are ignored and never touch message DB or AI filter
                 return@withContext verdict
             }
 

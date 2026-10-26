@@ -1,7 +1,6 @@
 package com.p2chat.ui.nav
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Radar
 import androidx.compose.material.icons.filled.Shield
@@ -30,11 +29,5 @@ enum class NavigationDestination(
         title = "AI Filter",
         contentDescription = "Navigate to on-device semantic toxicity filter",
         icon = Icons.Default.Shield
-    ),
-    BENCH(
-        route = "bench",
-        title = "Bench",
-        contentDescription = "Navigate to multi-hop benchmark telemetry suite",
-        icon = Icons.Default.Assessment
     )
 }

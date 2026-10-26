@@ -240,7 +240,8 @@ class ReceivePipelineTest {
         plaintext: String,
         packetType: PacketType = PacketType.CHAT,
         keyEpoch: Int = 1,
-        key: ByteArray = groupKey
+        key: ByteArray = groupKey,
+        senderFp: Long = this.senderFp
     ): ByteArray {
         val header = PacketHeader(
             packetType = packetType,
@@ -337,22 +338,9 @@ class ReceivePipelineTest {
 
     @Test
     fun testBenchDataAndAckBypassFilterServiceAndMessages() = runBlocking {
-        var benchDataReceived = false
-        var benchAckReceived = false
-
-        pipeline.benchListener = object : BenchPacketListener {
-            override suspend fun onBenchData(msgId: Long, initialTtl: Int, receivedTtl: Int, payload: ByteArray) {
-                benchDataReceived = true
-            }
-            override suspend fun onBenchAck(msgId: Long, receivedTtl: Int, ackMonoNs: Long) {
-                benchAckReceived = true
-            }
-        }
-
         val benchDataFrame = createFrame(msgId = 111L, plaintext = "BENCH_PAYLOAD", packetType = PacketType.BENCH_DATA)
         val v1 = pipeline.processFrame(benchDataFrame)
         assertTrue(v1 is PacketVerdict.Accept)
-        assertTrue(benchDataReceived)
         assertEquals(0, messageDao.count())
         assertEquals(0, quarantineDao.count())
         assertEquals(0, countingEmbedder.callCount)
@@ -360,7 +348,6 @@ class ReceivePipelineTest {
         val benchAckFrame = createFrame(msgId = 222L, plaintext = "ACK", packetType = PacketType.BENCH_ACK)
         val v2 = pipeline.processFrame(benchAckFrame)
         assertTrue(v2 is PacketVerdict.Accept)
-        assertTrue(benchAckReceived)
         assertEquals(0, messageDao.count())
         assertEquals(0, quarantineDao.count())
         assertEquals(0, countingEmbedder.callCount)
@@ -403,5 +390,53 @@ class ReceivePipelineTest {
         val msg = messageDao.getMessage(777L)
         assertNotNull(msg)
         assertEquals("Message from epoch 2", msg!!.body.text)
+    }
+
+    @Test
+    fun testAutoRegistrationOfUnknownSenderWithoutPinnedPeer() = runBlocking {
+        val unknownSenderFp = 0x7BCD1234567890EFL
+        val frame = createFrame(
+            msgId = 888L,
+            plaintext = "Hello from scanned peer",
+            senderFp = unknownSenderFp
+        )
+
+        val verdict = pipeline.processFrame(frame)
+        assertTrue("Verdict must be Accept", verdict is PacketVerdict.Accept)
+
+        val registeredMember = rosterDao.getMember(groupId, unknownSenderFp)
+        assertNotNull("Member must be auto-registered in rosterDao", registeredMember)
+        assertEquals(groupId, registeredMember!!.groupId)
+        assertEquals(unknownSenderFp, registeredMember.senderFp)
+        assertEquals(0, registeredMember.signingPub.size)
+        assertEquals(0, registeredMember.ecdhPub.size)
+        assertFalse(registeredMember.revoked)
+        val expectedAlias = "Peer-${java.lang.Long.toUnsignedString(unknownSenderFp, 16).takeLast(4).uppercase()}"
+        assertEquals(expectedAlias, registeredMember.alias)
+    }
+
+    @Test
+    fun testRevokedSenderPacketIsImmediatelyDropped() = runBlocking {
+        val revokedSenderFp = 0x7988776655443322L
+        rosterDao.insertOrUpdate(
+            RosterMember(
+                groupId = groupId,
+                senderFp = revokedSenderFp,
+                signingPub = ByteArray(0),
+                ecdhPub = ByteArray(0),
+                alias = "RevokedPeer",
+                revoked = true
+            )
+        )
+
+        val frame = createFrame(
+            msgId = 999L,
+            plaintext = "I was kicked but trying to talk",
+            senderFp = revokedSenderFp
+        )
+
+        val verdict = pipeline.processFrame(frame)
+        assertEquals(PacketVerdict.DropRevokedSender, verdict)
+        assertEquals(0, messageDao.count())
     }
 }

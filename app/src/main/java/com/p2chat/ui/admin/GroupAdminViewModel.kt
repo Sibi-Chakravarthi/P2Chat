@@ -131,6 +131,9 @@ class GroupAdminViewModel(
             return@launch
         }
 
+        // 1. Immediately mark member as revoked in rosterMemberDao
+        rosterMemberDao.revokeMember(groupId, removedSenderFp)
+
         val identity = localIdentityDao.getIdentity() ?: return@launch
         val signingPrivKey = identityManager.unwrapSigningPrivateKey(identity)
         val ecdhPrivKey = identityManager.unwrapEcdhPrivateKey(identity)
@@ -314,6 +317,100 @@ class GroupAdminViewModel(
         sendPipeline.sendControlFrames(listOf(invitePacket, rosterSyncPacket))
         SecureLog.d(TAG, "Invited ${qrPayload.alias} ($senderFp) to group $groupId (roster v$newRosterVersion)")
         _snackbarEvent.emit("Added ${qrPayload.alias} to group.")
+    }
+
+    /**
+     * Joins a group from a scanned Group Invite QR code and broadcasts ROSTER_SYNC (Fix B).
+     */
+    fun joinGroupFromInvite(qrBase64: String): Job = viewModelScope.launch(Dispatchers.Default) {
+        val inviteResult = com.p2chat.crypto.invite.GroupInviteCodec.decode(qrBase64)
+        if (inviteResult.isFailure) {
+            _snackbarEvent.emit("Invalid group invite QR code.")
+            return@launch
+        }
+        val invite = inviteResult.getOrThrow()
+        val identity = localIdentityDao.getIdentity() ?: return@launch
+        val signingPrivKey = identityManager.unwrapSigningPrivateKey(identity)
+        val nowMs = clock.currentTimeMillis()
+
+        // 1. Pin admin in peerDao
+        val adminPeer = Peer(
+            senderFp = invite.adminFp,
+            signingPub = invite.adminSigningPub,
+            ecdhPub = invite.adminEcdhPub,
+            alias = invite.adminAlias,
+            verified = true,
+            firstSeenMs = nowMs
+        )
+        peerDao.pinOrVerifyPeer(adminPeer)
+
+        // 2. Insert group and roster members
+        val wrappedGroupKey = keyVault.wrap(invite.groupKey)
+        val existingGroup = groupDao.getGroup(invite.groupId)
+        if (existingGroup == null) {
+            groupDao.insertGroup(
+                GroupEntity(
+                    groupId = invite.groupId,
+                    name = invite.groupName,
+                    myRole = "MEMBER",
+                    currentEpoch = invite.keyEpoch,
+                    wrappedCurrentKey = wrappedGroupKey,
+                    rosterVersion = 1
+                )
+            )
+        }
+
+        val adminMember = RosterMember(
+            groupId = invite.groupId,
+            senderFp = invite.adminFp,
+            signingPub = invite.adminSigningPub,
+            ecdhPub = invite.adminEcdhPub,
+            alias = invite.adminAlias,
+            revoked = false
+        )
+        val selfMember = RosterMember(
+            groupId = invite.groupId,
+            senderFp = identity.senderFp,
+            signingPub = identity.signingPub,
+            ecdhPub = identity.ecdhPub,
+            alias = identity.alias,
+            revoked = false
+        )
+        rosterMemberDao.insertOrUpdate(adminMember)
+        rosterMemberDao.insertOrUpdate(selfMember)
+
+        // 3. Fix B: Broadcast ROSTER_SYNC control packet over BLE
+        val selfMemberInfo = RosterMemberInfo(
+            senderFp = identity.senderFp,
+            signingPub = identity.signingPub,
+            ecdhPub = identity.ecdhPub,
+            alias = identity.alias,
+            revoked = false
+        )
+        val unsignedRoster = RosterCodec.encodeForSigning(
+            groupId = invite.groupId,
+            rosterVersion = 1,
+            adminFp = identity.senderFp,
+            members = listOf(selfMemberInfo)
+        )
+        val selfSig = Ecdsa.sign(signingPrivKey, unsignedRoster)
+        val signedRoster = SignedRoster(
+            groupId = invite.groupId,
+            rosterVersion = 1,
+            adminFp = identity.senderFp,
+            members = listOf(selfMemberInfo),
+            signature = selfSig
+        )
+        val rosterSyncPacket = RotationService.buildRosterSyncPacket(
+            adminFp = identity.senderFp,
+            adminSigningPrivateKey = signingPrivKey,
+            signedRoster = signedRoster,
+            groupKey = invite.groupKey,
+            keyEpoch = invite.keyEpoch,
+            sentAtMs = nowMs
+        )
+        sendPipeline.sendControlFrames(listOf(rosterSyncPacket))
+        _snackbarEvent.emit("Joined group ${invite.groupName}.")
     }
 
     suspend fun getGroupInviteData(): GroupInviteData? = withContext(Dispatchers.Default) {
